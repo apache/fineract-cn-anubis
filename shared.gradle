@@ -61,6 +61,9 @@ license {
     strictCheck true
     mapping {
         java = 'SLASHSTAR_STYLE'
+        xml = 'XML_STYLE'
+        yml = 'SCRIPT_STYLE'
+        yaml = 'SCRIPT_STYLE'
     }
     ext.year = Calendar.getInstance().get(Calendar.YEAR)
     ext.name = 'The Mifos Initiative'

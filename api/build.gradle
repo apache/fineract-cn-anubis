@@ -29,7 +29,7 @@ dependencies {
 
 publishing {
     publications {
-        anubisApi(MavenPublication) {
+        apiPublication(MavenPublication) {
             from components.java
             groupId project.group
             artifactId project.name

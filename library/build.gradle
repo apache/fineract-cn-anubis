@@ -37,9 +37,13 @@ dependencies {
     )
 }
 
+jar {
+    from sourceSets.main.allSource
+}
+
 publishing {
     publications {
-        anubis(MavenPublication) {
+        libraryPublication(MavenPublication) {
             from components.java
             groupId project.group
             artifactId project.name

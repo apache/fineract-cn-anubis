@@ -27,7 +27,7 @@ dependencies {
 
 publishing {
     publications {
-        anubisTest(MavenPublication) {
+        testPublication(MavenPublication) {
             from components.java
             groupId project.group
             artifactId project.name
