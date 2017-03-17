@@ -29,15 +29,15 @@ public class TokenTypeTest {
   @Test
   public void valueOfIssuer()
   {
-    Assert.assertEquals(TokenType.valueOfIssuer("seshat").get(), TokenType.SYSTEM);
-    Assert.assertEquals(TokenType.valueOfIssuer("isis").get(), TokenType.TENANT);
+    Assert.assertEquals(TokenType.valueOfIssuer("system").get(), TokenType.SYSTEM);
+    Assert.assertEquals(TokenType.valueOfIssuer("tenant").get(), TokenType.TENANT);
     Assert.assertEquals(TokenType.valueOfIssuer("ra"), Optional.empty());
   }
 
   @Test
   public void getIssuer()
   {
-    Assert.assertEquals(TokenType.SYSTEM.getIssuer(), "seshat");
-    Assert.assertEquals(TokenType.TENANT.getIssuer(), "isis");
+    Assert.assertEquals(TokenType.SYSTEM.getIssuer(), "system");
+    Assert.assertEquals(TokenType.TENANT.getIssuer(), "tenant");
   }
 }

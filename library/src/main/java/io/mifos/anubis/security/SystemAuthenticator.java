@@ -83,7 +83,7 @@ public class SystemAuthenticator {
       logger.debug("token = {}", token);
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyVersionException e) {
-      throw AmitAuthenticationException.invalidTokenVersion("seshat", version);
+      throw AmitAuthenticationException.invalidTokenVersion("system", version);
     }
   }
 }

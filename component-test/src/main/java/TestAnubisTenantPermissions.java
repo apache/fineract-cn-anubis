@@ -231,7 +231,7 @@ public class TestAnubisTenantPermissions {
   @Test
   public void tenantTokenForSystemEndpointShouldNotWorkRegardlessOfPermissions()
   {
-    try (final AutoSeshat ignored = new AutoSeshat(tenantApplicationSecurityEnvironment.seshatToken()))
+    try (final AutoSeshat ignored = new AutoSeshat(tenantApplicationSecurityEnvironment.systemToken()))
     {
       example.callSystemEndpoint();
     }

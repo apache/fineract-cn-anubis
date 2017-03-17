@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Optional;
 
-import static io.mifos.anubis.api.v1.client.Anubis.ISIS_PUBLIC_KEY_EXPONENT_HEADER;
-import static io.mifos.anubis.api.v1.client.Anubis.ISIS_PUBLIC_KEY_MODULUS_HEADER;
+import static io.mifos.anubis.api.v1.client.Anubis.TENANT_PUBLIC_KEY_EXPONENT_HEADER;
+import static io.mifos.anubis.api.v1.client.Anubis.TENANT_PUBLIC_KEY_MODULUS_HEADER;
 
 
 /**
@@ -57,25 +57,25 @@ public class InitializationFilter extends OncePerRequestFilter {
     final String method = request.getMethod();
 
     if (method.equals("POST")) {
-      final Optional<BigInteger> isisPublicKeyExponent =
-          toBigInteger(request.getHeader(ISIS_PUBLIC_KEY_EXPONENT_HEADER));
-      final Optional<BigInteger> isisPublicKeyModulus =
-          toBigInteger(request.getHeader(ISIS_PUBLIC_KEY_MODULUS_HEADER));
+      final Optional<BigInteger> tenantPublicKeyExponent =
+          toBigInteger(request.getHeader(TENANT_PUBLIC_KEY_EXPONENT_HEADER));
+      final Optional<BigInteger> tenantPublicKeyModulus =
+          toBigInteger(request.getHeader(TENANT_PUBLIC_KEY_MODULUS_HEADER));
 
-      if (!isisPublicKeyExponent.isPresent()) {
+      if (!tenantPublicKeyExponent.isPresent()) {
         response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-            "Header [" + ISIS_PUBLIC_KEY_EXPONENT_HEADER + "] must be a valid big integer.");
-      } else if (!isisPublicKeyModulus.isPresent()) {
+            "Header [" + TENANT_PUBLIC_KEY_EXPONENT_HEADER + "] must be a valid big integer.");
+      } else if (!tenantPublicKeyModulus.isPresent()) {
         response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-            "Header [" + ISIS_PUBLIC_KEY_MODULUS_HEADER + "] must be a valid big integer.");
+            "Header [" + TENANT_PUBLIC_KEY_MODULUS_HEADER + "] must be a valid big integer.");
       } else {
           //NOTE: we are provisioning, whether the tenant is already provisioned or not. This is
-          // for the case that isis public key has for some reason changed, and need to be
+          // for the case that tenant public key has for some reason changed, and need to be
           // re-broadcast.
         try {
           tenantAuthorizationDataRepository
-                  .provisionTenant(isisPublicKeyModulus.get(),
-                          isisPublicKeyExponent.get());
+                  .provisionTenant(tenantPublicKeyModulus.get(),
+                          tenantPublicKeyExponent.get());
         }
         catch (final ServiceException e)
         {

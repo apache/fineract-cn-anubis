@@ -58,39 +58,39 @@ public class SystemSecurityEnvironment {
 
   private final TenantAccessTokenSerializer tenantAccessTokenSerializer;
   private final SystemAccessTokenSerializer systemAccessTokenSerializer;
-  private final PublicKey seshatPublicKey;
-  private final PrivateKey seshatPrivateKey;
-  private final Map<String, RsaKeyPairFactory.KeyPairHolder> isisKeyPairHolders;
+  private final PublicKey systemPublicKey;
+  private final PrivateKey systemPrivateKey;
+  private final Map<String, RsaKeyPairFactory.KeyPairHolder> tenantKeyPairHolders;
 
-  public SystemSecurityEnvironment(final PublicKey seshatPublicKey, final PrivateKey seshatPrivateKey) {
+  public SystemSecurityEnvironment(final PublicKey systemPublicKey, final PrivateKey systemPrivateKey) {
     final Gson gson = new GsonBuilder().create();
     this.tenantAccessTokenSerializer = new TenantAccessTokenSerializer(gson);
     this.systemAccessTokenSerializer = new SystemAccessTokenSerializer();
-    this.seshatPublicKey = seshatPublicKey;
-    this.seshatPrivateKey = seshatPrivateKey;
+    this.systemPublicKey = systemPublicKey;
+    this.systemPrivateKey = systemPrivateKey;
 
-    this.isisKeyPairHolders = new HashMap<>();
+    this.tenantKeyPairHolders = new HashMap<>();
   }
 
-  public AutoUserContext createAutoSeshatContext(final String applicationName)
+  public AutoUserContext createAutoSystemContext(final String applicationName)
   {
-    return new AutoSeshat(seshatToken(applicationName));
+    return new AutoSeshat(systemToken(applicationName));
   }
 
-  public AutoUserContext createAutoSeshatContext(final String tenantName, final String applicationName) {
-    return new AutoSeshat(seshatToken(tenantName, applicationName));
+  public AutoUserContext createAutoSystemContext(final String tenantName, final String applicationName) {
+    return new AutoSeshat(systemToken(tenantName, applicationName));
   }
 
-  public String seshatToken(final String applicationName) {
-    return seshatToken(TenantContextHolder.checkedGetIdentifier(), applicationName);
+  public String systemToken(final String applicationName) {
+    return systemToken(TenantContextHolder.checkedGetIdentifier(), applicationName);
   }
 
-  private String seshatToken(final String tenantName, final String applicationName) {
+  private String systemToken(final String tenantName, final String applicationName) {
     return systemAccessTokenSerializer.build(new SystemAccessTokenSerializer.Specification()
             .setTenant(tenantName)
             .setRole(RoleConstants.SYSTEM_ADMIN_ROLE_IDENTIFIER)
             .setSecondsToLive(TimeUnit.HOURS.toSeconds(12))
-            .setPrivateKey(seshatPrivateKey)
+            .setPrivateKey(systemPrivateKey)
             .setTargetApplicationName(applicationName)
     ).getToken();
   }
@@ -131,13 +131,13 @@ public class SystemSecurityEnvironment {
 
   public RSAPublicKey tenantPublicKey()
   {
-    return isisKeyPairHolders.computeIfAbsent(TenantContextHolder.checkedGetIdentifier(),
+    return tenantKeyPairHolders.computeIfAbsent(TenantContextHolder.checkedGetIdentifier(),
             x -> RsaKeyPairFactory.createKeyPair()).publicKey();
   }
 
   public RSAPrivateKey tenantPrivateKey()
   {
-    return isisKeyPairHolders.computeIfAbsent(TenantContextHolder.checkedGetIdentifier(),
+    return tenantKeyPairHolders.computeIfAbsent(TenantContextHolder.checkedGetIdentifier(),
             x -> RsaKeyPairFactory.createKeyPair()).privateKey();
   }
 
@@ -183,19 +183,19 @@ public class SystemSecurityEnvironment {
 
     final SystemRsaKeyProvider systemRsaKeyProvider = Mockito.mock(SystemRsaKeyProvider.class);
     try {
-      Mockito.doReturn(seshatPublicKey).when(systemRsaKeyProvider).getPublicKey(Mockito.anyString());
+      Mockito.doReturn(systemPublicKey).when(systemRsaKeyProvider).getPublicKey(Mockito.anyString());
     }
     catch (final InvalidKeyVersionException ignored) {}
 
     final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
-    final SystemAuthenticator isisSystemAuthenticator = new SystemAuthenticator(
+    final SystemAuthenticator systemAuthenticator = new SystemAuthenticator(
             systemRsaKeyProvider,
             ApplicationName.appNameWithVersion(forService, forServiceVersion),
             permittableService,
             logger);
     try {
-      return (isisSystemAuthenticator.authenticate(forUser, jwtToken, "1") != null);
+      return (systemAuthenticator.authenticate(forUser, jwtToken, "1") != null);
     }
     catch (final Exception e)
     {

@@ -68,11 +68,11 @@ public class SystemAccessTokenSerializerTest {
     final SystemAccessTokenSerializer testSubject = new SystemAccessTokenSerializer();
 
     final LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
-    final TokenSerializationResult seshatToken = testSubject.build(specification);
+    final TokenSerializationResult systemToken = testSubject.build(specification);
 
-    Assert.assertNotNull(seshatToken);
+    Assert.assertNotNull(systemToken);
 
-    final LocalDateTime expiration = seshatToken.getExpiration();
+    final LocalDateTime expiration = systemToken.getExpiration();
     final long diff = expiration.toInstant(ZoneOffset.ofHours(0)).getEpochSecond()
         - now.toInstant(ZoneOffset.ofHours(0)).getEpochSecond();
 
@@ -82,7 +82,7 @@ public class SystemAccessTokenSerializerTest {
     final Jwt<Header, Claims> parsedToken = Jwts
         .parser()
         .setSigningKey(keyPairHolder.publicKey())
-        .parse(seshatToken.getToken().substring("Bearer ".length()).trim());
+        .parse(systemToken.getToken().substring("Bearer ".length()).trim());
 
 
     Assert.assertNotNull(parsedToken);

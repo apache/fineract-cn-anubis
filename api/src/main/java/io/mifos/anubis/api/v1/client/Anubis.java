@@ -29,8 +29,8 @@ import java.util.List;
 @SuppressWarnings("WeakerAccess")
 @FeignClient
 public interface Anubis {
-  String ISIS_PUBLIC_KEY_MODULUS_HEADER = "X-Isis-Public-Key-Modulus";
-  String ISIS_PUBLIC_KEY_EXPONENT_HEADER = "X-Isis-Public-Key-Exponent";
+  String TENANT_PUBLIC_KEY_MODULUS_HEADER = "X-Tenant-Public-Key-Modulus";
+  String TENANT_PUBLIC_KEY_EXPONENT_HEADER = "X-Tenant-Public-Key-Exponent";
 
   @RequestMapping(
       value = "/permittables",
@@ -44,7 +44,7 @@ public interface Anubis {
       consumes = {MediaType.APPLICATION_JSON_VALUE},
       produces = {MediaType.ALL_VALUE})
   void initialize(
-      @RequestHeader(ISIS_PUBLIC_KEY_MODULUS_HEADER) BigInteger isisKeyMod,
-      @RequestHeader(ISIS_PUBLIC_KEY_EXPONENT_HEADER) BigInteger isisKeyExp)
+      @RequestHeader(TENANT_PUBLIC_KEY_MODULUS_HEADER) BigInteger tenantKeyMod,
+      @RequestHeader(TENANT_PUBLIC_KEY_EXPONENT_HEADER) BigInteger tenantKeyExp)
       throws InvalidTokenException, TenantNotFoundException;
 }

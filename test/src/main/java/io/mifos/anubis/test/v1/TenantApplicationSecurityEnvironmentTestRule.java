@@ -55,8 +55,8 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     this(testEnvironment.getProperty(SPRING_APPLICATION_NAME_PROPERTY),
             testEnvironment.serverURI(),
             new SystemSecurityEnvironment(
-                    testEnvironment.getSeshatPublicKey(),
-                    testEnvironment.getSeshatPrivateKey()),
+                    testEnvironment.getSystemPublicKey(),
+                    testEnvironment.getSystemPrivateKey()),
             waitForInitialize);
   }
 
@@ -83,10 +83,10 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
   {
     final Anubis anubis = AnubisApiFactory.create(applicationUri);
 
-    final String seshatToken = systemSecurityEnvironment.seshatToken(applicationName);
+    final String systemToken = systemSecurityEnvironment.systemToken(applicationName);
 
     try (final AutoTenantContext x = new AutoTenantContext(TenantContextHolder.checkedGetIdentifier())) {
-      try (final AutoSeshat y = new AutoSeshat(seshatToken)) {
+      try (final AutoSeshat y = new AutoSeshat(systemToken)) {
         final RSAPublicKey publicKey = systemSecurityEnvironment.tenantPublicKey();
         anubis.initialize(publicKey.getModulus(), publicKey.getPublicExponent());
       }}
@@ -104,12 +104,12 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
   public AutoUserContext createAutoSeshatContext()
   {
-    return systemSecurityEnvironment.createAutoSeshatContext(applicationName);
+    return systemSecurityEnvironment.createAutoSystemContext(applicationName);
   }
 
   public AutoUserContext createAutoSeshatContext(final String tenantName)
   {
-    return systemSecurityEnvironment.createAutoSeshatContext(tenantName, applicationName);
+    return systemSecurityEnvironment.createAutoSystemContext(tenantName, applicationName);
   }
 
   public String getPermissionToken(
@@ -119,7 +119,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     return systemSecurityEnvironment.getPermissionToken(userName, applicationName, uri, allowedOperation);
   }
 
-  public String seshatToken() {
-    return systemSecurityEnvironment.seshatToken(applicationName);
+  public String systemToken() {
+    return systemSecurityEnvironment.systemToken(applicationName);
   }
 }

@@ -29,30 +29,30 @@ import java.security.PublicKey;
  */
 @Component
 public class SystemRsaKeyProvider {
-  private String seshatPublicKeyMod;
-  private String seshatPublicKeyExp;
+  private String systemPublicKeyMod;
+  private String systemPublicKeyExp;
 
-  private PublicKey seshatPublicKey;
+  private PublicKey systemPublicKey;
 
   @Autowired
-  public SystemRsaKeyProvider(final @Value("${seshat.publicKey.modulus}") String seshatPublicKeyMod, final @Value("${seshat.publicKey.exponent}") String seshatPublicKeyExp)
+  public SystemRsaKeyProvider(final @Value("${system.publicKey.modulus}") String systemPublicKeyMod, final @Value("${system.publicKey.exponent}") String systemPublicKeyExp)
   {
-    this.seshatPublicKeyMod = seshatPublicKeyMod;
-    this.seshatPublicKeyExp = seshatPublicKeyExp;
+    this.systemPublicKeyMod = systemPublicKeyMod;
+    this.systemPublicKeyExp = systemPublicKeyExp;
   }
 
   @PostConstruct
   public void init() {
-    this.seshatPublicKey =
+    this.systemPublicKey =
         new RsaPublicKeyBuilder()
-            .setPublicKeyMod(new BigInteger(seshatPublicKeyMod))
-            .setPublicKeyExp(new BigInteger(seshatPublicKeyExp))
+            .setPublicKeyMod(new BigInteger(systemPublicKeyMod))
+            .setPublicKeyExp(new BigInteger(systemPublicKeyExp))
             .build();
   }
 
   public PublicKey getPublicKey(final String tokenVersion) throws InvalidKeyVersionException {
     if (!tokenVersion.equals("1"))
       throw new InvalidKeyVersionException(tokenVersion);
-    return seshatPublicKey;
+    return systemPublicKey;
   }
 }

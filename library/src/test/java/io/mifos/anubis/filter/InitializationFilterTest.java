@@ -31,8 +31,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static io.mifos.anubis.api.v1.client.Anubis.ISIS_PUBLIC_KEY_EXPONENT_HEADER;
-import static io.mifos.anubis.api.v1.client.Anubis.ISIS_PUBLIC_KEY_MODULUS_HEADER;
+import static io.mifos.anubis.api.v1.client.Anubis.TENANT_PUBLIC_KEY_EXPONENT_HEADER;
+import static io.mifos.anubis.api.v1.client.Anubis.TENANT_PUBLIC_KEY_MODULUS_HEADER;
 import static javax.servlet.http.HttpServletResponse.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -107,9 +107,9 @@ public class InitializationFilterTest {
 
     request = Mockito.mock(HttpServletRequest.class);
     when(request.getMethod()).thenReturn(testCase.method);
-    when(request.getHeader(ISIS_PUBLIC_KEY_EXPONENT_HEADER)).thenReturn(
+    when(request.getHeader(TENANT_PUBLIC_KEY_EXPONENT_HEADER)).thenReturn(
         String.valueOf(testCase.publicKeyExp));
-    when(request.getHeader(ISIS_PUBLIC_KEY_MODULUS_HEADER)).thenReturn(
+    when(request.getHeader(TENANT_PUBLIC_KEY_MODULUS_HEADER)).thenReturn(
         String.valueOf(testCase.publicKeyMod));
 
     response = Mockito.mock(HttpServletResponse.class);

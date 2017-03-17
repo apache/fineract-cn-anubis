@@ -18,7 +18,7 @@ package io.mifos.anubis.token;
 import java.util.Optional;
 
 public enum TokenType {
-  SYSTEM("seshat"), TENANT("isis"), ;
+  SYSTEM("system"), TENANT("tenant"), ;
 
   private final String issuer;
 

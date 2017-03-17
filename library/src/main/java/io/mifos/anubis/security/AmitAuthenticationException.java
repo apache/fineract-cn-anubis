@@ -58,12 +58,12 @@ public class AmitAuthenticationException extends AuthenticationException {
     return new AmitAuthenticationException("Token does not contain content.  Perhaps you submitted a refresh token instead of the access token?");
   }
 
-  @SuppressWarnings("unused") //used in isis
+  @SuppressWarnings("unused") //used in identity
   public static AmitAuthenticationException userPasswordCombinationNotFound() {
     return new AmitAuthenticationException("A user with the given useridentifier and password doesn't exist.");
   }
 
-  @SuppressWarnings("unused") //used in isis
+  @SuppressWarnings("unused") //used in identity
   public static AmitAuthenticationException passwordExpired() {
     return new AmitAuthenticationException("Users password has expired.");
   }

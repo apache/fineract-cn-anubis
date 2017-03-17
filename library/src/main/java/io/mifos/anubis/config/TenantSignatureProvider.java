@@ -24,7 +24,7 @@ public interface TenantSignatureProvider {
   /**
    *
    * @param version The version of the signature to get.
-   * @return The public keys that isis uses for signing tokens.
+   * @return The public keys that the identity service uses for signing tokens.
    * @throws IllegalArgumentException if the tenant context is not set.
    */
   Optional<Signature> getSignature(String version) throws IllegalArgumentException;

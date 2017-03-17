@@ -86,7 +86,7 @@ public class TenantAuthenticator {
     catch (final JwtException e) {
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyVersionException e) {
-      throw AmitAuthenticationException.invalidTokenVersion("isis", version);
+      throw AmitAuthenticationException.invalidTokenVersion("tenant", version);
     }
   }
 

@@ -53,11 +53,11 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
     this.cassandraSessionProvider = cassandraSessionProvider;
   }
 
-  public void provisionTenant(final BigInteger isisPublicKeyModulus, final BigInteger isisPublicKeyExponent) {
+  public void provisionTenant(final BigInteger tenantPublicKeyModulus, final BigInteger tenantPublicKeyExponent) {
     final Session session = cassandraSessionProvider.getTenantSession();
 
     createTable(session);
-    createEntry(session, isisPublicKeyModulus, isisPublicKeyExponent);
+    createEntry(session, tenantPublicKeyModulus, tenantPublicKeyExponent);
   }
 
   private void createTable(final Session tenantSession) {
