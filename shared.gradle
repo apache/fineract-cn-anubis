@@ -8,7 +8,6 @@ apply plugin: 'io.spring.dependency-management'
 
 
 ext.versions = [
-        mifosbabel          : '0.4.1-GA',
         frameworktest       : '0.1.0-BUILD-SNAPSHOT',
         frameworkapi        : '0.1.0-BUILD-SNAPSHOT',
         frameworkcassandra  : '0.1.0-BUILD-SNAPSHOT',
