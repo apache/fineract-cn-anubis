@@ -18,6 +18,7 @@ package io.mifos.anubis.test.v1;
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
+import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.lang.AutoTenantContext;
@@ -55,6 +56,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     this(testEnvironment.getProperty(SPRING_APPLICATION_NAME_PROPERTY),
             testEnvironment.serverURI(),
             new SystemSecurityEnvironment(
+                    testEnvironment.getSystemKeyTimestamp(),
                     testEnvironment.getSystemPublicKey(),
                     testEnvironment.getSystemPrivateKey()),
             waitForInitialize);
@@ -87,8 +89,11 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
     try (final AutoTenantContext x = new AutoTenantContext(TenantContextHolder.checkedGetIdentifier())) {
       try (final AutoSeshat y = new AutoSeshat(systemToken)) {
+        final String keyTimestamp = systemSecurityEnvironment.tenantKeyTimestamp();
         final RSAPublicKey publicKey = systemSecurityEnvironment.tenantPublicKey();
-        anubis.initialize(publicKey.getModulus(), publicKey.getPublicExponent());
+        final Signature identityManagerSignature = new Signature(publicKey.getModulus(), publicKey.getPublicExponent());
+        anubis.createSignatureSet(keyTimestamp, identityManagerSignature);
+        anubis.initializeResources();
       }}
   }
 

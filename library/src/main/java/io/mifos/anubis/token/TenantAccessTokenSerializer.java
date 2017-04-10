@@ -45,10 +45,16 @@ public class TenantAccessTokenSerializer {
 
 
   public static class Specification {
+    private String keyTimestamp;
     private PrivateKey privateKey;
     private String user;
     private TokenContent tokenContent;
     private long secondsToLive;
+
+    public Specification setKeyTimestamp(final String keyTimestamp) {
+      this.keyTimestamp = keyTimestamp;
+      return this;
+    }
 
     public Specification setPrivateKey(final PrivateKey privateKey) {
       this.privateKey = privateKey;
@@ -77,10 +83,17 @@ public class TenantAccessTokenSerializer {
 
     final String serializedTokenContent = gson.toJson(specification.tokenContent);
 
+    if (specification.keyTimestamp == null) {
+      throw new IllegalArgumentException("token signature timestamp must not be null.");
+    }
+    if (specification.privateKey == null) {
+      throw new IllegalArgumentException("token signature privateKey must not be null.");
+    }
+
     final JwtBuilder jwtBuilder =
         Jwts.builder()
             .setSubject(specification.user)
-            .claim(TokenConstants.JWT_VERSION_CLAIM, TokenConstants.VERSION)
+            .claim(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, specification.keyTimestamp)
             .claim(TokenConstants.JWT_CONTENT_CLAIM, serializedTokenContent)
             .setIssuer(TokenType.TENANT.getIssuer())
             .setIssuedAt(new Date(issued))

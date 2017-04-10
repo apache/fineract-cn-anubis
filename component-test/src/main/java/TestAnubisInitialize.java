@@ -17,6 +17,7 @@
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.client.TenantNotFoundException;
+import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.example.simple.Example;
 import io.mifos.anubis.example.simple.ExampleConfiguration;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
@@ -91,8 +92,12 @@ public class TestAnubisInitialize {
 
         try (final AutoSeshat ignored2 = new AutoSeshat(brokenSeshatToken)) {
           final TenantApplicationSecurityEnvironmentTestRule securityMock = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
+
+          final String keyTimestamp = securityMock.getSystemSecurityEnvironment().tenantKeyTimestamp();
           final RSAPublicKey publicKey = securityMock.getSystemSecurityEnvironment().tenantPublicKey();
-          anubis.initialize(publicKey.getModulus(), publicKey.getPublicExponent());
+          final Signature signature = new Signature(publicKey.getModulus(), publicKey.getPublicExponent());
+
+          anubis.createSignatureSet(keyTimestamp, signature);
         }
 
         Assert.assertFalse("A call with a broken token should result in an exception thrown.", true);

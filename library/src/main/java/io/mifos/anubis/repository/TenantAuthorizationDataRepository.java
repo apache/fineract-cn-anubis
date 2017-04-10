@@ -19,12 +19,16 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
-import io.mifos.anubis.api.v1.TokenConstants;
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
+import io.mifos.anubis.config.AnubisConstants;
 import io.mifos.anubis.config.TenantSignatureProvider;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
+import io.mifos.core.lang.security.RsaKeyPairFactory;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -38,26 +42,77 @@ import java.util.Optional;
  */
 @Component
 public class TenantAuthorizationDataRepository implements TenantSignatureProvider {
+  private static final String AUTHORIZATION_TABLE_SUFFIX = "_authorization_v1_data";
+  private static final String TIMESTAMP_COLUMN = "timestamp";
+  private static final String VALID_COLUMN = "valid";
+  private static final String IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN = "identity_manager_public_key_mod";
+  private static final String IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN = "identity_manager_public_key_exp";
+  private static final String APPLICATION_PRIVATE_KEY_MOD_COLUMN = "application_private_key_mod";
+  private static final String APPLICATION_PRIVATE_KEY_EXP_COLUMN = "application_private_key_exp";
+  private static final String APPLICATION_PUBLIC_KEY_MOD_COLUMN = "application_public_key_mod";
+  private static final String APPLICATION_PUBLIC_KEY_EXP_COLUMN = "application_public_key_exp";
+
   private final String tableName;
   private final CassandraSessionProvider cassandraSessionProvider;
 
   //So that the query only has to be prepared once and the Cassandra driver stops writing warnings into my logfiles.
-  private final Map<String, Select.Where> versionToSignatureQueryMap = new HashMap<>();
+  private final Map<String, Select.Where> timestampToSignatureQueryMap = new HashMap<>();
+  private final Logger logger;
 
   @Autowired
   public TenantAuthorizationDataRepository(
       final ApplicationName applicationName,
-      final CassandraSessionProvider cassandraSessionProvider)
+      final CassandraSessionProvider cassandraSessionProvider,
+      final @Qualifier(AnubisConstants.LOGGER_NAME) Logger logger)
   {
-    tableName = applicationName.getServiceName() + "_authorization_v1_data";
+    tableName = applicationName.getServiceName() + AUTHORIZATION_TABLE_SUFFIX;
     this.cassandraSessionProvider = cassandraSessionProvider;
+    this.logger = logger;
   }
 
-  public void provisionTenant(final BigInteger tenantPublicKeyModulus, final BigInteger tenantPublicKeyExponent) {
+  /**
+   *
+   * @param timestamp The timestamp to save the signatures for.  When rotating keys, this will be used to delete keys
+   *                  which are being rotated out.
+   *
+   * @param identityManagerSignature The public keys of the identity manager.  These keys will be used to authenticate
+   *                                 the user via the token provided in most requests.
+   *
+   * @return The signature containing the public keys of the application.  This is *not* the signature passed in
+   * for the identity manager.
+   */
+  public Signature createSignatureSet(final String timestamp, final Signature identityManagerSignature) {
+    //TODO: add validation to make sure this timestamp is more recent than any already stored.
+    final RsaKeyPairFactory.KeyPairHolder applicationSignature = RsaKeyPairFactory.createKeyPair();
+
     final Session session = cassandraSessionProvider.getTenantSession();
 
     createTable(session);
-    createEntry(session, tenantPublicKeyModulus, tenantPublicKeyExponent);
+    createEntry(session,
+            timestamp,
+            identityManagerSignature.getPublicKeyMod(),
+            identityManagerSignature.getPublicKeyExp(),
+            applicationSignature.getPrivateKeyMod(),
+            applicationSignature.getPrivateKeyExp(),
+            applicationSignature.getPublicKeyMod(),
+            applicationSignature.getPublicKeyExp());
+
+    return new Signature(applicationSignature.getPublicKeyMod(), applicationSignature.getPublicKeyExp());
+  }
+
+  public Optional<ApplicationSignatureSet> getSignatureSet(final String timestamp) {
+    return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToSignatureSet);
+  }
+
+  public void deleteSignatureSet(final String timestamp) {
+    //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
+    //know what's happening.
+    final Session session = cassandraSessionProvider.getTenantSession();
+    invalidateEntry(session, timestamp);
+  }
+
+  public Optional<Signature> getApplicationSignature(final String timestamp) {
+    return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToApplicationSignature);
   }
 
   private void createTable(final Session tenantSession) {
@@ -65,70 +120,160 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
     final String createTenantsTable = SchemaBuilder
         .createTable(tableName)
         .ifNotExists()
-        .addPartitionKey("version", DataType.text())
-        .addColumn("public_key_mod", DataType.varint())
-        .addColumn("public_key_exp", DataType.varint())
+        .addPartitionKey(TIMESTAMP_COLUMN, DataType.text())
+            .addColumn(VALID_COLUMN, DataType.cboolean())
+            .addColumn(IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, DataType.varint())
+            .addColumn(IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN, DataType.varint())
+            .addColumn(APPLICATION_PRIVATE_KEY_MOD_COLUMN, DataType.varint())
+            .addColumn(APPLICATION_PRIVATE_KEY_EXP_COLUMN, DataType.varint())
+            .addColumn(APPLICATION_PUBLIC_KEY_MOD_COLUMN, DataType.varint())
+            .addColumn(APPLICATION_PUBLIC_KEY_EXP_COLUMN, DataType.varint())
         .buildInternal();
 
     tenantSession.execute(createTenantsTable);
   }
 
   private void createEntry(final Session tenantSession,
-      final BigInteger publicKeyModulus,
-      final BigInteger publicKeyExponent)
+                           final String timestamp,
+                           final BigInteger identityManagerPublicKeyModulus,
+                           final BigInteger identityManagerPublicKeyExponent,
+                           final BigInteger applicationPrivateKeyModulus,
+                           final BigInteger applicationPrivateKeyExponent,
+                           final BigInteger applicationPublicKeyModulus,
+                           final BigInteger applicationPublicKeyExponent)
   {
 
-    final ResultSet versionCount =
-        tenantSession.execute("SELECT count(*) FROM " + this.tableName + " WHERE version = '" + TokenConstants.VERSION + "'");
-    final Long value = versionCount.one().get(0, Long.class);
+    final ResultSet timestampCount =
+        tenantSession.execute("SELECT count(*) FROM " + this.tableName + " WHERE " + TIMESTAMP_COLUMN + " = '" + timestamp + "'");
+    final Long value = timestampCount.one().get(0, Long.class);
     if (value == 0L) {
       //There will only be one entry in this table per version.
       final BoundStatement tenantCreationStatement =
           tenantSession.prepare("INSERT INTO " + tableName + " ("
-              + "version, "
-              + "public_key_mod, "
-              + "public_key_exp)"
-              + "VALUES (?, ?, ?)").bind();
-      completeBoundStatement(tenantCreationStatement, publicKeyModulus, publicKeyExponent);
+                  + TIMESTAMP_COLUMN + ", "
+                  + VALID_COLUMN + ", "
+                  + IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN + ", "
+                  + IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN + ", "
+                  + APPLICATION_PRIVATE_KEY_MOD_COLUMN + ", "
+                  + APPLICATION_PRIVATE_KEY_EXP_COLUMN + ", "
+                  + APPLICATION_PUBLIC_KEY_MOD_COLUMN + ", "
+                  + APPLICATION_PUBLIC_KEY_EXP_COLUMN + ")"
+                  + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind();
+      completeBoundStatement(tenantCreationStatement,
+              timestamp,
+              true,
+              identityManagerPublicKeyModulus,
+              identityManagerPublicKeyExponent,
+              applicationPrivateKeyModulus,
+              applicationPrivateKeyExponent,
+              applicationPublicKeyModulus,
+              applicationPublicKeyExponent);
 
       tenantSession.execute(tenantCreationStatement);
     } else {
+      //TODO: Make sure existing entry hasn't been invalidated, or just don't allow an update.
       final BoundStatement tenantUpdateStatement =
           tenantSession.prepare("UPDATE " + tableName + " SET "
-              + " public_key_mod = ?, "
-              + " public_key_exp = ? "
-              + " WHERE version = ?").bind();
-      completeBoundStatement(tenantUpdateStatement, publicKeyModulus, publicKeyExponent);
+                  + VALID_COLUMN + " = ?, "
+                  + IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN + " = ?, "
+                  + IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN + " = ?, "
+                  + APPLICATION_PRIVATE_KEY_MOD_COLUMN + " = ?, "
+                  + APPLICATION_PRIVATE_KEY_EXP_COLUMN + " = ?, "
+                  + APPLICATION_PUBLIC_KEY_MOD_COLUMN + " = ?, "
+                  + APPLICATION_PUBLIC_KEY_EXP_COLUMN + " = ? "
+                  + "WHERE " + TIMESTAMP_COLUMN + " = ?").bind();
+      completeBoundStatement(tenantUpdateStatement,
+              timestamp,
+              true,
+              identityManagerPublicKeyModulus,
+              identityManagerPublicKeyExponent,
+              applicationPrivateKeyModulus,
+              applicationPrivateKeyExponent,
+              applicationPublicKeyModulus,
+              applicationPublicKeyExponent);
 
       tenantSession.execute(tenantUpdateStatement);
     }
   }
 
+  private void invalidateEntry(final Session tenantSession, final String timestamp) {
+    final BoundStatement tenantUpdateStatement =
+            tenantSession.prepare("UPDATE " + tableName + " SET "
+                    + VALID_COLUMN + " = ?, "
+                    + "WHERE " + TIMESTAMP_COLUMN + " = ?").bind();
+
+    tenantUpdateStatement.setString(TIMESTAMP_COLUMN, timestamp);
+    tenantUpdateStatement.setBool(VALID_COLUMN, false);
+
+    tenantSession.execute(tenantUpdateStatement);
+  }
+
   private void completeBoundStatement(
-      final BoundStatement tenantCreationStatement,
-      final BigInteger publicKeyModulus,
-      final BigInteger publicKeyExponent) {
-    tenantCreationStatement.setString("version", TokenConstants.VERSION);
-    tenantCreationStatement.setVarint("public_key_mod", publicKeyModulus);
-    tenantCreationStatement.setVarint("public_key_exp", publicKeyExponent);
+      final BoundStatement boundStatement,
+      final String timestamp,
+      final boolean valid,
+      final BigInteger identityManagerPublicKeyModulus,
+      final BigInteger identityManagerPublicKeyExponent,
+      final BigInteger applicationPrivateKeyModulus,
+      final BigInteger applicationPrivateKeyExponent,
+      final BigInteger applicationPublicKeyModulus,
+      final BigInteger applicationPublicKeyExponent) {
+    boundStatement.setString(TIMESTAMP_COLUMN, timestamp);
+    boundStatement.setBool(VALID_COLUMN, valid);
+    boundStatement.setVarint(IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, identityManagerPublicKeyModulus);
+    boundStatement.setVarint(IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN, identityManagerPublicKeyExponent);
+    boundStatement.setVarint(APPLICATION_PRIVATE_KEY_MOD_COLUMN, applicationPrivateKeyModulus);
+    boundStatement.setVarint(APPLICATION_PRIVATE_KEY_EXP_COLUMN, applicationPrivateKeyExponent);
+    boundStatement.setVarint(APPLICATION_PUBLIC_KEY_MOD_COLUMN, applicationPublicKeyModulus);
+    boundStatement.setVarint(APPLICATION_PUBLIC_KEY_EXP_COLUMN, applicationPublicKeyExponent);
   }
 
   @Override
-  public Optional<Signature> getSignature(final String version)
+  public Optional<Signature> getIdentityManagerSignature(final String timestamp)
   {
+    return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToIdentityManagerSignature);
+  }
+
+  private Optional<Row> getRow(final String timestamp) {
     final Session tenantSession = cassandraSessionProvider.getTenantSession();
-    final Select.Where query = versionToSignatureQueryMap.computeIfAbsent(version, versionKey ->
-        QueryBuilder.select().from(tableName).where(QueryBuilder.eq("version", versionKey)));
-    final Row result = tenantSession.execute(query).one();
-    if (result == null)
-      return Optional.empty();
+    final Select.Where query = timestampToSignatureQueryMap.computeIfAbsent(timestamp, timestampKey ->
+            QueryBuilder.select().from(tableName).where(QueryBuilder.eq(TIMESTAMP_COLUMN, timestampKey)));
+    final Row row = tenantSession.execute(query).one();
+    final Optional<Row> ret = Optional.ofNullable(row);
+    ret.map(TenantAuthorizationDataRepository::mapRowToValid).ifPresent(valid -> {
+      if (!valid)
+        logger.warn("Invalidated keyset for timestamp '" + timestamp + "' requested. Pretending no keyset exists.");
+    });
+    return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
+  }
 
-    final BigInteger publicKeyMod = result.get("public_key_mod", BigInteger.class);
-    final BigInteger publicKeyExp = result.get("public_key_exp", BigInteger.class);
+  private static Boolean mapRowToValid(final Row row) {
+    return row.get(VALID_COLUMN, Boolean.class);
+  }
 
-    Assert.notNull(publicKeyMod);
-    Assert.notNull(publicKeyExp);
+  private static Signature getSignature(Row row, String publicKeyModColumnName, String publicKeyExpColumnName) {
+    final BigInteger publicKeyModulus = row.get(publicKeyModColumnName, BigInteger.class);
+    final BigInteger publicKeyExponent = row.get(publicKeyExpColumnName, BigInteger.class);
 
-    return Optional.of(new Signature(publicKeyMod, publicKeyExp));
+    Assert.notNull(publicKeyModulus);
+    Assert.notNull(publicKeyExponent);
+
+    return new Signature(publicKeyModulus, publicKeyExponent);
+  }
+
+  private static Signature mapRowToIdentityManagerSignature(final Row row) {
+    return getSignature(row, IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN);
+  }
+
+  private static Signature mapRowToApplicationSignature(final Row row) {
+    return getSignature(row, APPLICATION_PUBLIC_KEY_MOD_COLUMN, APPLICATION_PUBLIC_KEY_EXP_COLUMN);
+  }
+
+  private static ApplicationSignatureSet mapRowToSignatureSet(final Row row) {
+    final String timestamp = row.get(TIMESTAMP_COLUMN, String.class);
+    final Signature identityManagerSignature = mapRowToIdentityManagerSignature(row);
+    final Signature applicationSignature = mapRowToApplicationSignature(row);
+
+    return new ApplicationSignatureSet(timestamp, applicationSignature, identityManagerSignature);
   }
 }

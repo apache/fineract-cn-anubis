@@ -45,7 +45,7 @@ public class AmitAuthenticationException extends AuthenticationException {
     return new AmitAuthenticationException("Invalid authorization header.");
   }
 
-  public static AmitAuthenticationException invalidTokenVersion(final String issuer, final String version) {
+  public static AmitAuthenticationException invalidTokenKeyTimestamp(final String issuer, final String version) {
     return new AmitAuthenticationException(
         "Token version " + version + " not accepted for issuer " + issuer + ".");
   }

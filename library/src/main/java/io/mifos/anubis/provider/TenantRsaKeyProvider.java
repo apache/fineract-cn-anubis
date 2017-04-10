@@ -38,14 +38,14 @@ public class TenantRsaKeyProvider {
     this.tenantSignatureProvider = tenantSignatureProvider;
   }
 
-  public PublicKey getPublicKey(final String tokenVersion) throws InvalidKeyVersionException {
+  public PublicKey getPublicKey(final String keyTimestamp) throws InvalidKeyTimestampException {
     final Optional<Signature> tenantAuthorizationData =
-        tenantSignatureProvider.getSignature(tokenVersion);
+        tenantSignatureProvider.getIdentityManagerSignature(keyTimestamp);
 
     return
         tenantAuthorizationData.map(x -> new RsaPublicKeyBuilder()
         .setPublicKeyMod(x.getPublicKeyMod())
         .setPublicKeyExp(x.getPublicKeyExp())
-        .build()).orElseThrow(() -> new InvalidKeyVersionException(tokenVersion + " + not initialized."));
+        .build()).orElseThrow(() -> new InvalidKeyTimestampException(keyTimestamp + " + not initialized."));
   }
 }

@@ -22,18 +22,18 @@ import io.mifos.anubis.token.TokenType;
  */
 class TokenInfo {
   final private TokenType type;
-  final private String version;
+  final private String keyTimestamp;
 
-  TokenInfo(final TokenType type, final String version) {
+  TokenInfo(final TokenType type, final String keyTimestamp) {
     this.type = type;
-    this.version = version;
+    this.keyTimestamp = keyTimestamp;
   }
 
   TokenType getType() {
     return type;
   }
 
-  String getVersion() {
-    return version;
+  String getKeyTimestamp() {
+    return keyTimestamp;
   }
 }

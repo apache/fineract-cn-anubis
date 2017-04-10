@@ -55,6 +55,7 @@ public class TenantAccessTokenSerializerTest {
   {
     final TenantAccessTokenSerializer.Specification specification
         = new TenantAccessTokenSerializer.Specification()
+            .setKeyTimestamp("1234567")
         .setUser(USER)
         .setTokenContent(EXAMPLE_TOKEN_CONTENT)
         .setPrivateKey(keyPairHolder.privateKey())
@@ -88,8 +89,8 @@ public class TenantAccessTokenSerializerTest {
     final Integer expires = (Integer) parsedToken.getBody().get("exp");
     Assert.assertNotNull(expires);
     Assert.assertTrue(expires > issued);
-    final String version = parsedToken.getBody().get(TokenConstants.JWT_VERSION_CLAIM, String.class);
-    Assert.assertEquals("1", version);
+    final String timestamp = parsedToken.getBody().get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
+    Assert.assertEquals("1234567", timestamp);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -105,6 +106,5 @@ public class TenantAccessTokenSerializerTest {
     final TenantAccessTokenSerializer testSubject = new TenantAccessTokenSerializer(new Gson());
 
     testSubject.build(specification);
-
   }
 }

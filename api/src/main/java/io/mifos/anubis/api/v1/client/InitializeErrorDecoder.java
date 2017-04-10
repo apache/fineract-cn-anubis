@@ -19,11 +19,11 @@ import feign.Feign;
 import feign.FeignException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
+import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.core.api.util.InvalidTokenException;
 import org.apache.http.HttpStatus;
 
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 
 /**
  * @author Myrle Krantz
@@ -31,9 +31,11 @@ import java.math.BigInteger;
 class InitializeErrorDecoder implements ErrorDecoder {
   @Override public Exception decode(final String methodKey, final Response response) {
     try {
-      final Method method = Anubis.class.getDeclaredMethod("initialize", BigInteger.class, BigInteger.class);
-      final String initializeMethodKey =  Feign.configKey(Anubis.class, method);
-      if (initializeMethodKey.equals(methodKey))
+      final Method createSignatureSetMethod = Anubis.class.getDeclaredMethod("createSignatureSet", String.class, Signature.class);
+      final String createSignatureSetMethodKey =  Feign.configKey(Anubis.class, createSignatureSetMethod);
+      final Method initializeResourcesMethod = Anubis.class.getDeclaredMethod("initializeResources");
+      final String initializeResourcesMethodKey =  Feign.configKey(Anubis.class, initializeResourcesMethod);
+      if (createSignatureSetMethodKey.equals(methodKey) || initializeResourcesMethodKey.equals(methodKey))
       {
         if (response.status() == HttpStatus.SC_BAD_REQUEST)
           return new IllegalArgumentException();
@@ -46,7 +48,7 @@ class InitializeErrorDecoder implements ErrorDecoder {
       return FeignException.errorStatus(methodKey, response);
     }
     catch (final NoSuchMethodException e) {
-      throw new IllegalStateException("Could not find initialize method.");
+      throw new IllegalStateException("Could not find createSignatureSet method."); //TODO:
     }
   }
 }

@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/initialize")
-public class InitializeRestController {
+public class EmptyInitializeResourcesRestController {
   @Permittable(AcceptedTokenType.SYSTEM)
   @RequestMapping(
       method = RequestMethod.POST,

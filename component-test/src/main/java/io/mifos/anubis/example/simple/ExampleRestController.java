@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * @author Myrle Krantz
  */
+@SuppressWarnings("unused")
 @RestController
 @RequestMapping()
 public class ExampleRestController {

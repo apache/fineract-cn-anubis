@@ -59,11 +59,12 @@ public class SystemAccessTokenSerializerTest {
 
     final SystemAccessTokenSerializer.Specification specification
         = new SystemAccessTokenSerializer.Specification()
-        .setTargetApplicationName(APPLICATION_NAME)
-        .setPrivateKey(keyPairHolder.privateKey())
-        .setRole(ROLE)
-        .setSecondsToLive(SECONDS_TO_LIVE)
-        .setTenant(TEST_TENANT);
+            .setKeyTimestamp("123456")
+            .setTargetApplicationName(APPLICATION_NAME)
+            .setPrivateKey(keyPairHolder.privateKey())
+            .setRole(ROLE)
+            .setSecondsToLive(SECONDS_TO_LIVE)
+            .setTenant(TEST_TENANT);
 
     final SystemAccessTokenSerializer testSubject = new SystemAccessTokenSerializer();
 
@@ -94,8 +95,8 @@ public class SystemAccessTokenSerializerTest {
     final Integer expires = (Integer) parsedToken.getBody().get("exp");
     Assert.assertNotNull(expires);
     Assert.assertTrue(expires > issued);
-    final String version = parsedToken.getBody().get(TokenConstants.JWT_VERSION_CLAIM, String.class);
-    Assert.assertEquals("1", version);
+    final String timestamp = parsedToken.getBody().get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
+    Assert.assertEquals("123456", timestamp);
   }
 
   @Test(expected = IllegalArgumentException.class)

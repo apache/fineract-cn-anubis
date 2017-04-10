@@ -21,7 +21,7 @@ import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.api.v1.domain.TokenContent;
 import io.mifos.anubis.api.v1.domain.TokenPermission;
-import io.mifos.anubis.provider.InvalidKeyVersionException;
+import io.mifos.anubis.provider.InvalidKeyTimestampException;
 import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.TokenType;
@@ -62,12 +62,12 @@ public class TenantAuthenticator {
   AnubisAuthentication authenticate(
       final @Nonnull String user,
       final @Nonnull String token,
-      final @Nonnull String version) {
+      final @Nonnull String keyTimestamp) {
     try {
       final JwtParser parser = Jwts.parser()
           .requireSubject(user)
           .requireIssuer(TokenType.TENANT.getIssuer())
-          .setSigningKey(tenantRsaKeyProvider.getPublicKey(version));
+          .setSigningKey(tenantRsaKeyProvider.getPublicKey(keyTimestamp));
 
       @SuppressWarnings("unchecked") Jwt<Header, Claims> jwt = parser.parse(token);
 
@@ -85,8 +85,8 @@ public class TenantAuthenticator {
     }
     catch (final JwtException e) {
       throw AmitAuthenticationException.invalidToken();
-    } catch (final InvalidKeyVersionException e) {
-      throw AmitAuthenticationException.invalidTokenVersion("tenant", version);
+    } catch (final InvalidKeyTimestampException e) {
+      throw AmitAuthenticationException.invalidTokenKeyTimestamp("tenant", keyTimestamp);
     }
   }
 

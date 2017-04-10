@@ -26,7 +26,6 @@ import java.lang.annotation.*;
 @Import({
     AnubisConfiguration.class,
     AnubisImportSelector.class,
-    FilterRegistrationBeanRegistrar.class,
     AnubisSecurityConfigurerAdapter.class
 })
 public @interface EnableAnubis {

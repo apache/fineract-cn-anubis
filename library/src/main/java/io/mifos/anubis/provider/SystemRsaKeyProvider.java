@@ -29,14 +29,16 @@ import java.security.PublicKey;
  */
 @Component
 public class SystemRsaKeyProvider {
-  private String systemPublicKeyMod;
-  private String systemPublicKeyExp;
+  private final String keyTimestamp;
+  private final String systemPublicKeyMod;
+  private final String systemPublicKeyExp;
 
   private PublicKey systemPublicKey;
 
   @Autowired
-  public SystemRsaKeyProvider(final @Value("${system.publicKey.modulus}") String systemPublicKeyMod, final @Value("${system.publicKey.exponent}") String systemPublicKeyExp)
+  public SystemRsaKeyProvider(final @Value("${system.publicKey.timestamp}") String keyTimestamp, final @Value("${system.publicKey.modulus}") String systemPublicKeyMod, final @Value("${system.publicKey.exponent}") String systemPublicKeyExp)
   {
+    this.keyTimestamp = keyTimestamp;
     this.systemPublicKeyMod = systemPublicKeyMod;
     this.systemPublicKeyExp = systemPublicKeyExp;
   }
@@ -50,9 +52,9 @@ public class SystemRsaKeyProvider {
             .build();
   }
 
-  public PublicKey getPublicKey(final String tokenVersion) throws InvalidKeyVersionException {
-    if (!tokenVersion.equals("1"))
-      throw new InvalidKeyVersionException(tokenVersion);
+  public PublicKey getPublicKey(final String timestamp) throws InvalidKeyTimestampException {
+    if (!timestamp.equals(keyTimestamp))
+      throw new InvalidKeyTimestampException(timestamp);
     return systemPublicKey;
   }
 }

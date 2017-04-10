@@ -15,23 +15,20 @@
  */
 package io.mifos.anubis.api.v1.client;
 
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.PermittableEndpoint;
+import io.mifos.anubis.api.v1.domain.Signature;
+import io.mifos.anubis.api.v1.validation.ValidKeyTimestamp;
 import io.mifos.core.api.util.InvalidTokenException;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
-import java.math.BigInteger;
 import java.util.List;
 
 @SuppressWarnings("WeakerAccess")
 @FeignClient
 public interface Anubis {
-  String TENANT_PUBLIC_KEY_MODULUS_HEADER = "X-Tenant-Public-Key-Modulus";
-  String TENANT_PUBLIC_KEY_EXPONENT_HEADER = "X-Tenant-Public-Key-Exponent";
-
   @RequestMapping(
       value = "/permittables",
       method = RequestMethod.GET,
@@ -40,11 +37,33 @@ public interface Anubis {
   )
   List<PermittableEndpoint> getPermittableEndpoints();
 
+  @RequestMapping(value = "/signatures/{timestamp}", method = RequestMethod.POST,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  ApplicationSignatureSet createSignatureSet(@PathVariable("timestamp") @ValidKeyTimestamp String timestamp,
+                                             @RequestBody Signature identityManagerSignature)
+          throws InvalidTokenException, TenantNotFoundException;
+
+  @RequestMapping(value = "/signatures/{timestamp}", method = RequestMethod.GET,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  ApplicationSignatureSet getSignatureSet(@PathVariable("timestamp") String timestamp)
+          throws InvalidTokenException, TenantNotFoundException;
+
+  @RequestMapping(value = "/signatures/{timestamp}", method = RequestMethod.DELETE,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  void deleteSignatureSet(@PathVariable("timestamp") String timestamp)
+          throws InvalidTokenException, TenantNotFoundException;
+
+  @RequestMapping(value = "/signatures/{timestamp}/application", method = RequestMethod.GET,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  Signature getApplicationSignature(@PathVariable("timestamp") String timestamp)
+          throws InvalidTokenException, TenantNotFoundException;
+
   @RequestMapping(value = "/initialize", method = RequestMethod.POST,
-      consumes = {MediaType.APPLICATION_JSON_VALUE},
-      produces = {MediaType.ALL_VALUE})
-  void initialize(
-      @RequestHeader(TENANT_PUBLIC_KEY_MODULUS_HEADER) BigInteger tenantKeyMod,
-      @RequestHeader(TENANT_PUBLIC_KEY_EXPONENT_HEADER) BigInteger tenantKeyExp)
-      throws InvalidTokenException, TenantNotFoundException;
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  void initializeResources() throws InvalidTokenException, TenantNotFoundException;
 }

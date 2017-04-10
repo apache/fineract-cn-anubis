@@ -13,19 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.config;
+package io.mifos.anubis.api.v1.validation;
 
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.*;
 
-import io.mifos.anubis.api.v1.domain.Signature;
+/**
+ * @author Myrle Krantz
+ */
+@SuppressWarnings("unused")
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Constraint(
+        validatedBy = {CheckKeyTimestamp.class}
+)
+public @interface ValidKeyTimestamp {
+  String message() default "Invalid key timestamp.";
 
-import java.util.Optional;
+  Class<?>[] groups() default {};
 
-public interface TenantSignatureProvider {
-  /**
-   *
-   * @param timestamp The timestamp of the signature to get.
-   * @return The public keys that the identity service uses for signing tokens.
-   * @throws IllegalArgumentException if the tenant context is not set.
-   */
-  Optional<Signature> getIdentityManagerSignature(String timestamp) throws IllegalArgumentException;
+  Class<? extends Payload>[] payload() default {};
 }
