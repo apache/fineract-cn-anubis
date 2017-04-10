@@ -160,4 +160,6 @@ public class TestAnubisInitialize {
       Assert.assertTrue(example.initialized());
     }
   }
+
+  //TODO: tests still needed for getting application key and deleting keysets.
 }
