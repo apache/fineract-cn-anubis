@@ -104,15 +104,15 @@ public class TestAnubisKeyRotation {
         Assert.assertTrue(signatureSets.contains(identityManagerKeyPair.getTimestamp()));
       }
 
-      //Get the newly created signature set, and test that it's contents are correct.
+      //Get the newly created signature set, and test that its contents are correct.
       final ApplicationSignatureSet signatureSet = anubis.getSignatureSet(identityManagerKeyPair.getTimestamp());
       Assert.assertEquals(identityManagerSignature, signatureSet.getIdentityManagerSignature());
 
-      //Get just the application signature, and test that it's contents match the results of the whole signature set.
+      //Get just the application signature, and test that its contents match the results of the whole signature set.
       final Signature applicationSignature = anubis.getApplicationSignature(identityManagerKeyPair.getTimestamp());
       Assert.assertEquals(signatureSet.getApplicationSignature(), applicationSignature);
 
-      //Create a second signature set and test that it and the prevous signature set are listed.
+      //Create a second signature set and test that it and the previous signature set are listed.
       final RsaKeyPairFactory.KeyPairHolder identityManagerKeyPair2 = RsaKeyPairFactory.createKeyPair();
       final Signature identityManagerSignature2 = new Signature(identityManagerKeyPair2.getPublicKeyMod(), identityManagerKeyPair2.getPublicKeyExp());
 
