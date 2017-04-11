@@ -16,11 +16,13 @@
 package io.mifos.anubis.config;
 
 
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 
+import java.util.List;
 import java.util.Optional;
 
-public interface TenantSignatureProvider {
+public interface TenantSignatureRepository {
   /**
    *
    * @param timestamp The timestamp of the signature to get.
@@ -28,4 +30,12 @@ public interface TenantSignatureProvider {
    * @throws IllegalArgumentException if the tenant context is not set.
    */
   Optional<Signature> getIdentityManagerSignature(String timestamp) throws IllegalArgumentException;
+
+  List<String> getAllSignatureSetKeyTimestamps();
+
+  Optional<ApplicationSignatureSet> getSignatureSet(String timestamp);
+
+  void deleteSignatureSet(String timestamp);
+
+  Optional<Signature> getApplicationSignature(String timestamp);
 }

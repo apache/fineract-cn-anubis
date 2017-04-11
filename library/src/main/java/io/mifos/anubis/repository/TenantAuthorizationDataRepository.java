@@ -18,11 +18,12 @@ package io.mifos.anubis.repository;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.config.AnubisConstants;
-import io.mifos.anubis.config.TenantSignatureProvider;
+import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
@@ -32,17 +33,22 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Myrle Krantz
  */
 @Component
-public class TenantAuthorizationDataRepository implements TenantSignatureProvider {
+public class TenantAuthorizationDataRepository implements TenantSignatureRepository {
   private static final String AUTHORIZATION_TABLE_SUFFIX = "_authorization_v1_data";
+  private static final String AUTHORIZATION_INDEX_SUFFIX = "_authorization_v1_valid_index";
   private static final String TIMESTAMP_COLUMN = "timestamp";
   private static final String VALID_COLUMN = "valid";
   private static final String IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN = "identity_manager_public_key_mod";
@@ -53,6 +59,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
   private static final String APPLICATION_PUBLIC_KEY_EXP_COLUMN = "application_public_key_exp";
 
   private final String tableName;
+  private final String indexName;
   private final CassandraSessionProvider cassandraSessionProvider;
 
   //So that the query only has to be prepared once and the Cassandra driver stops writing warnings into my logfiles.
@@ -66,6 +73,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
       final @Qualifier(AnubisConstants.LOGGER_NAME) Logger logger)
   {
     tableName = applicationName.getServiceName() + AUTHORIZATION_TABLE_SUFFIX;
+    indexName = applicationName.getServiceName() + AUTHORIZATION_INDEX_SUFFIX;
     this.cassandraSessionProvider = cassandraSessionProvider;
     this.logger = logger;
   }
@@ -82,6 +90,9 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
    * for the identity manager.
    */
   public Signature createSignatureSet(final String timestamp, final Signature identityManagerSignature) {
+    Assert.notNull(timestamp);
+    Assert.notNull(identityManagerSignature);
+
     //TODO: add validation to make sure this timestamp is more recent than any already stored.
     final RsaKeyPairFactory.KeyPairHolder applicationSignature = RsaKeyPairFactory.createKeyPair();
 
@@ -101,10 +112,12 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
   }
 
   public Optional<ApplicationSignatureSet> getSignatureSet(final String timestamp) {
+    Assert.notNull(timestamp);
     return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToSignatureSet);
   }
 
   public void deleteSignatureSet(final String timestamp) {
+    Assert.notNull(timestamp);
     //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
     //know what's happening.
     final Session session = cassandraSessionProvider.getTenantSession();
@@ -112,15 +125,17 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
   }
 
   public Optional<Signature> getApplicationSignature(final String timestamp) {
+    Assert.notNull(timestamp);
+
     return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToApplicationSignature);
   }
 
-  private void createTable(final Session tenantSession) {
+  private void createTable(final @Nonnull Session tenantSession) {
 
     final String createTenantsTable = SchemaBuilder
-        .createTable(tableName)
-        .ifNotExists()
-        .addPartitionKey(TIMESTAMP_COLUMN, DataType.text())
+            .createTable(tableName)
+            .ifNotExists()
+            .addPartitionKey(TIMESTAMP_COLUMN, DataType.text())
             .addColumn(VALID_COLUMN, DataType.cboolean())
             .addColumn(IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, DataType.varint())
             .addColumn(IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN, DataType.varint())
@@ -128,19 +143,27 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
             .addColumn(APPLICATION_PRIVATE_KEY_EXP_COLUMN, DataType.varint())
             .addColumn(APPLICATION_PUBLIC_KEY_MOD_COLUMN, DataType.varint())
             .addColumn(APPLICATION_PUBLIC_KEY_EXP_COLUMN, DataType.varint())
-        .buildInternal();
+            .buildInternal();
 
     tenantSession.execute(createTenantsTable);
+
+    final String createValidIndex = SchemaBuilder.createIndex(indexName)
+            .ifNotExists()
+            .onTable(tableName)
+            .andColumn(VALID_COLUMN)
+            .toString();
+
+    tenantSession.execute(createValidIndex);
   }
 
-  private void createEntry(final Session tenantSession,
-                           final String timestamp,
-                           final BigInteger identityManagerPublicKeyModulus,
-                           final BigInteger identityManagerPublicKeyExponent,
-                           final BigInteger applicationPrivateKeyModulus,
-                           final BigInteger applicationPrivateKeyExponent,
-                           final BigInteger applicationPublicKeyModulus,
-                           final BigInteger applicationPublicKeyExponent)
+  private void createEntry(final @Nonnull Session tenantSession,
+                           final @Nonnull String timestamp,
+                           final @Nonnull BigInteger identityManagerPublicKeyModulus,
+                           final @Nonnull BigInteger identityManagerPublicKeyExponent,
+                           final @Nonnull BigInteger applicationPrivateKeyModulus,
+                           final @Nonnull BigInteger applicationPrivateKeyExponent,
+                           final @Nonnull BigInteger applicationPublicKeyModulus,
+                           final @Nonnull BigInteger applicationPublicKeyExponent)
   {
 
     final ResultSet timestampCount =
@@ -196,28 +219,21 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
     }
   }
 
-  private void invalidateEntry(final Session tenantSession, final String timestamp) {
-    final BoundStatement tenantUpdateStatement =
-            tenantSession.prepare("UPDATE " + tableName + " SET "
-                    + VALID_COLUMN + " = ?, "
-                    + "WHERE " + TIMESTAMP_COLUMN + " = ?").bind();
-
-    tenantUpdateStatement.setString(TIMESTAMP_COLUMN, timestamp);
-    tenantUpdateStatement.setBool(VALID_COLUMN, false);
-
-    tenantSession.execute(tenantUpdateStatement);
+  private void invalidateEntry(final @Nonnull Session tenantSession, final @Nonnull String timestamp) {
+    final Update.Assignments updateQuery = QueryBuilder.update(tableName).where(QueryBuilder.eq(TIMESTAMP_COLUMN, timestamp)).with(QueryBuilder.set(VALID_COLUMN, false));
+    tenantSession.execute(updateQuery);
   }
 
   private void completeBoundStatement(
-      final BoundStatement boundStatement,
-      final String timestamp,
+      final @Nonnull BoundStatement boundStatement,
+      final @Nonnull String timestamp,
       final boolean valid,
-      final BigInteger identityManagerPublicKeyModulus,
-      final BigInteger identityManagerPublicKeyExponent,
-      final BigInteger applicationPrivateKeyModulus,
-      final BigInteger applicationPrivateKeyExponent,
-      final BigInteger applicationPublicKeyModulus,
-      final BigInteger applicationPublicKeyExponent) {
+      final @Nonnull BigInteger identityManagerPublicKeyModulus,
+      final @Nonnull BigInteger identityManagerPublicKeyExponent,
+      final @Nonnull BigInteger applicationPrivateKeyModulus,
+      final @Nonnull BigInteger applicationPrivateKeyExponent,
+      final @Nonnull BigInteger applicationPublicKeyModulus,
+      final @Nonnull BigInteger applicationPublicKeyExponent) {
     boundStatement.setString(TIMESTAMP_COLUMN, timestamp);
     boundStatement.setBool(VALID_COLUMN, valid);
     boundStatement.setVarint(IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, identityManagerPublicKeyModulus);
@@ -231,10 +247,11 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
   @Override
   public Optional<Signature> getIdentityManagerSignature(final String timestamp)
   {
+    Assert.notNull(timestamp);
     return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToIdentityManagerSignature);
   }
 
-  private Optional<Row> getRow(final String timestamp) {
+  private Optional<Row> getRow(final @Nonnull String timestamp) {
     final Session tenantSession = cassandraSessionProvider.getTenantSession();
     final Select.Where query = timestampToSignatureQueryMap.computeIfAbsent(timestamp, timestampKey ->
             QueryBuilder.select().from(tableName).where(QueryBuilder.eq(TIMESTAMP_COLUMN, timestampKey)));
@@ -247,11 +264,13 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
     return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
   }
 
-  private static Boolean mapRowToValid(final Row row) {
+  private static Boolean mapRowToValid(final @Nonnull Row row) {
     return row.get(VALID_COLUMN, Boolean.class);
   }
 
-  private static Signature getSignature(Row row, String publicKeyModColumnName, String publicKeyExpColumnName) {
+  private static Signature getSignature(final @Nonnull Row row,
+                                        final @Nonnull String publicKeyModColumnName,
+                                        final @Nonnull String publicKeyExpColumnName) {
     final BigInteger publicKeyModulus = row.get(publicKeyModColumnName, BigInteger.class);
     final BigInteger publicKeyExponent = row.get(publicKeyExpColumnName, BigInteger.class);
 
@@ -261,19 +280,27 @@ public class TenantAuthorizationDataRepository implements TenantSignatureProvide
     return new Signature(publicKeyModulus, publicKeyExponent);
   }
 
-  private static Signature mapRowToIdentityManagerSignature(final Row row) {
+  private static Signature mapRowToIdentityManagerSignature(final @Nonnull Row row) {
     return getSignature(row, IDENTITY_MANAGER_PUBLIC_KEY_MOD_COLUMN, IDENTITY_MANAGER_PUBLIC_KEY_EXP_COLUMN);
   }
 
-  private static Signature mapRowToApplicationSignature(final Row row) {
+  private static Signature mapRowToApplicationSignature(final @Nonnull Row row) {
     return getSignature(row, APPLICATION_PUBLIC_KEY_MOD_COLUMN, APPLICATION_PUBLIC_KEY_EXP_COLUMN);
   }
 
-  private static ApplicationSignatureSet mapRowToSignatureSet(final Row row) {
+  private static ApplicationSignatureSet mapRowToSignatureSet(final @Nonnull Row row) {
     final String timestamp = row.get(TIMESTAMP_COLUMN, String.class);
     final Signature identityManagerSignature = mapRowToIdentityManagerSignature(row);
     final Signature applicationSignature = mapRowToApplicationSignature(row);
 
     return new ApplicationSignatureSet(timestamp, applicationSignature, identityManagerSignature);
+  }
+
+  public List<String> getAllSignatureSetKeyTimestamps() {
+    final Select.Where selectValid = QueryBuilder.select(TIMESTAMP_COLUMN).from(tableName).where(QueryBuilder.eq(VALID_COLUMN, true));
+    final ResultSet result = cassandraSessionProvider.getTenantSession().execute(selectValid);
+    return StreamSupport.stream(result.spliterator(), false)
+            .map(x -> x.get(TIMESTAMP_COLUMN, String.class))
+            .collect(Collectors.toList());
   }
 }

@@ -28,6 +28,8 @@ import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +43,7 @@ import java.util.List;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class TestPermittableEndpoints {
   private static final String APP_NAME = "anubis-v1";
+  private static final String LOGGER_QUALIFIER = "test-logger";
 
   @Configuration
   @Import({ExampleConfiguration.class})
@@ -49,11 +52,16 @@ public class TestPermittableEndpoints {
       super();
     }
 
-    @Bean()
+    @Bean(name=LOGGER_QUALIFIER)
     public Logger logger() {
       return LoggerFactory.getLogger("permittable-test-logger");
     }
   }
+
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
+  @Autowired
+  @Qualifier(value = LOGGER_QUALIFIER)
+  Logger logger;
 
   private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
   private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
@@ -67,7 +75,7 @@ public class TestPermittableEndpoints {
 
   @Test
   public void shouldFindPermittableEndpoints() throws Exception {
-    final Anubis anubis = AnubisApiFactory.create(TestPermittableEndpoints.testEnvironment.serverURI());
+    final Anubis anubis = AnubisApiFactory.create(TestPermittableEndpoints.testEnvironment.serverURI(), logger);
     final List<PermittableEndpoint> permittableEndpoints = anubis.getPermittableEndpoints();
     Assert.assertNotNull(permittableEndpoints);
     Assert.assertEquals(6, permittableEndpoints.size());

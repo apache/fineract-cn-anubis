@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SystemSecurityEnvironment {
-  private final static String LOGGER_NAME = "anubis-test-logger";
+  final static String LOGGER_NAME = "anubis-test-logger";
 
   private final TenantAccessTokenSerializer tenantAccessTokenSerializer;
   private final SystemAccessTokenSerializer systemAccessTokenSerializer;

@@ -16,6 +16,7 @@
 package io.mifos.anubis.config;
 
 import io.mifos.anubis.controller.EmptyInitializeResourcesRestController;
+import io.mifos.anubis.controller.SignatureCreatorRestController;
 import io.mifos.anubis.controller.SignatureRestController;
 import io.mifos.anubis.controller.PermittableRestController;
 import io.mifos.anubis.provider.SystemRsaKeyProvider;
@@ -54,6 +55,7 @@ class AnubisImportSelector implements ImportSelector {
     classesToImport.add(GuestAuthenticator.class);
 
     classesToImport.add(PermittableRestController.class);
+    classesToImport.add(SignatureRestController.class);
     classesToImport.add(PermittableService.class);
 
     final boolean storeTenantKeysAtInitialization = (boolean)importingClassMetadata
@@ -61,7 +63,7 @@ class AnubisImportSelector implements ImportSelector {
         .get("storeTenantKeysAtInitialization");
 
     if (storeTenantKeysAtInitialization) {
-      classesToImport.add(SignatureRestController.class);
+      classesToImport.add(SignatureCreatorRestController.class);
       classesToImport.add(TenantAuthorizationDataRepository.class);
 
       final boolean generateEmptyInitializeEndpoint = (boolean)importingClassMetadata

@@ -25,6 +25,8 @@ import io.mifos.core.lang.AutoTenantContext;
 import io.mifos.core.lang.TenantContextHolder;
 import io.mifos.core.test.env.TestEnvironment;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
@@ -46,6 +48,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
   private final SystemSecurityEnvironment systemSecurityEnvironment;
   private final BooleanSupplier waitForInitialize;
+  private final Logger logger;
 
   public TenantApplicationSecurityEnvironmentTestRule(final TestEnvironment testEnvironment) {
     this(testEnvironment, () -> true);
@@ -72,6 +75,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     this.applicationUri = applicationUri;
     this.systemSecurityEnvironment = systemSecurityEnvironment;
     this.waitForInitialize = waitForInitialize;
+    this.logger = LoggerFactory.getLogger(SystemSecurityEnvironment.LOGGER_NAME);
   }
 
   @Override
@@ -83,7 +87,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
   public void initializeTenantInApplication()
   {
-    final Anubis anubis = AnubisApiFactory.create(applicationUri);
+    final Anubis anubis = getAnubis();
 
     final String systemToken = systemSecurityEnvironment.systemToken(applicationName);
 
@@ -95,6 +99,10 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
         anubis.createSignatureSet(keyTimestamp, identityManagerSignature);
         anubis.initializeResources();
       }}
+  }
+
+  public Anubis getAnubis() {
+    return AnubisApiFactory.create(applicationUri, logger);
   }
 
   public SystemSecurityEnvironment getSystemSecurityEnvironment()
