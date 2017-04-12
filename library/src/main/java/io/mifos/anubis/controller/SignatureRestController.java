@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Myrle Krantz
@@ -65,6 +66,19 @@ public class SignatureRestController {
   }
 
   @Permittable(AcceptedTokenType.SYSTEM)
+  @RequestMapping(value = "/signatures/_latest", method = RequestMethod.GET,
+          consumes = {MediaType.ALL_VALUE},
+          produces = {MediaType.APPLICATION_JSON_VALUE})
+  public
+  @ResponseBody ResponseEntity<ApplicationSignatureSet> getLatestSignatureSet()
+  {
+    final Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(tenantSignatureRepository::getSignatureSet)
+            .map(ResponseEntity::ok)
+            .orElseThrow(() -> ServiceException.notFound("No valid signature found."));
+  }
+
+  @Permittable(AcceptedTokenType.SYSTEM)
   @RequestMapping(value = "/signatures/{timestamp}", method = RequestMethod.DELETE,
           consumes = {MediaType.ALL_VALUE},
           produces = {MediaType.APPLICATION_JSON_VALUE})
@@ -85,5 +99,23 @@ public class SignatureRestController {
     return tenantSignatureRepository.getApplicationSignature(timestamp)
             .map(ResponseEntity::ok)
             .orElseThrow(() -> ServiceException.notFound("Signature for timestamp '" + timestamp + "' not found."));
+  }
+
+  @Permittable(AcceptedTokenType.SYSTEM)
+  @RequestMapping(value = "/signatures/_latest/application", method = RequestMethod.GET,
+          consumes = {MediaType.ALL_VALUE},
+          produces = {MediaType.APPLICATION_JSON_VALUE})
+  public
+  @ResponseBody ResponseEntity<Signature> getLatestApplicationSignature()
+  {
+    final Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(tenantSignatureRepository::getApplicationSignature)
+            .map(ResponseEntity::ok)
+            .orElseThrow(() -> ServiceException.notFound("No valid signature found."));
+  }
+
+  private Optional<String> getMostRecentTimestamp() {
+    return tenantSignatureRepository.getAllSignatureSetKeyTimestamps().stream()
+            .max(String::compareTo);
   }
 }

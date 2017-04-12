@@ -55,6 +55,11 @@ public interface Anubis {
           produces = {MediaType.ALL_VALUE})
   ApplicationSignatureSet getSignatureSet(@PathVariable("timestamp") String timestamp);
 
+  @RequestMapping(value = "/signatures/_latest", method = RequestMethod.GET,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  ApplicationSignatureSet getLatestSignatureSet();
+
   @RequestMapping(value = "/signatures/{timestamp}", method = RequestMethod.DELETE,
           consumes = {MediaType.APPLICATION_JSON_VALUE},
           produces = {MediaType.ALL_VALUE})
@@ -64,6 +69,11 @@ public interface Anubis {
           consumes = {MediaType.APPLICATION_JSON_VALUE},
           produces = {MediaType.ALL_VALUE})
   Signature getApplicationSignature(@PathVariable("timestamp") String timestamp);
+
+  @RequestMapping(value = "/signatures/_latest/application", method = RequestMethod.GET,
+          consumes = {MediaType.APPLICATION_JSON_VALUE},
+          produces = {MediaType.ALL_VALUE})
+  Signature getLatestApplicationSignature();
 
   @RequestMapping(value = "/initialize", method = RequestMethod.POST,
           consumes = {MediaType.APPLICATION_JSON_VALUE},
