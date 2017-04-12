@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableAutoConfiguration
 @EnableTenantContext
-@EnableAnubis(storeTenantKeysAtInitialization = false)
+@EnableAnubis(provideSignatureStorage = false)
 @EnableServiceException
 @ComponentScan({
     "io.mifos.anubis.example.nokeystorage"

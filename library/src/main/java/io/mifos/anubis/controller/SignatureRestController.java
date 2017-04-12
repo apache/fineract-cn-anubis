@@ -72,8 +72,7 @@ public class SignatureRestController {
   public
   @ResponseBody ResponseEntity<ApplicationSignatureSet> getLatestSignatureSet()
   {
-    final Optional<String> timestamp = getMostRecentTimestamp();
-    return timestamp.flatMap(tenantSignatureRepository::getSignatureSet)
+    return tenantSignatureRepository.getLatestSignatureSet()
             .map(ResponseEntity::ok)
             .orElseThrow(() -> ServiceException.notFound("No valid signature found."));
   }
@@ -108,14 +107,8 @@ public class SignatureRestController {
   public
   @ResponseBody ResponseEntity<Signature> getLatestApplicationSignature()
   {
-    final Optional<String> timestamp = getMostRecentTimestamp();
-    return timestamp.flatMap(tenantSignatureRepository::getApplicationSignature)
+    return tenantSignatureRepository.getLatestApplicationSignature()
             .map(ResponseEntity::ok)
             .orElseThrow(() -> ServiceException.notFound("No valid signature found."));
-  }
-
-  private Optional<String> getMostRecentTimestamp() {
-    return tenantSignatureRepository.getAllSignatureSetKeyTimestamps().stream()
-            .max(String::compareTo);
   }
 }

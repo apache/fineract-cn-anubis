@@ -29,6 +29,7 @@ import java.lang.annotation.*;
     AnubisSecurityConfigurerAdapter.class
 })
 public @interface EnableAnubis {
-  boolean storeTenantKeysAtInitialization() default true;
+  boolean provideSignatureRestController() default true;
+  boolean provideSignatureStorage() default true;
   boolean generateEmptyInitializeEndpoint() default false;
 }

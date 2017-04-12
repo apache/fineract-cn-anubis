@@ -63,4 +63,21 @@ public class SpecialTenantSignatureRepository implements TenantSignatureReposito
     final Optional<ApplicationSignatureSet> sigset = Optional.ofNullable(applicationSignatureSetMap.get(timestamp));
     return sigset.map(ApplicationSignatureSet::getApplicationSignature);
   }
+
+  @Override
+  public Optional<ApplicationSignatureSet> getLatestSignatureSet() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getSignatureSet);
+  }
+
+  @Override
+  public Optional<Signature> getLatestApplicationSignature() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getApplicationSignature);
+  }
+
+  private Optional<String> getMostRecentTimestamp() {
+    return getAllSignatureSetKeyTimestamps().stream()
+            .max(String::compareTo);
+  }
 }

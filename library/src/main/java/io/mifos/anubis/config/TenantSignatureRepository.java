@@ -35,7 +35,11 @@ public interface TenantSignatureRepository {
 
   Optional<ApplicationSignatureSet> getSignatureSet(String timestamp);
 
+  Optional<ApplicationSignatureSet> getLatestSignatureSet();
+
   void deleteSignatureSet(String timestamp);
 
   Optional<Signature> getApplicationSignature(String timestamp);
+
+  Optional<Signature> getLatestApplicationSignature();
 }

@@ -55,24 +55,30 @@ class AnubisImportSelector implements ImportSelector {
     classesToImport.add(GuestAuthenticator.class);
 
     classesToImport.add(PermittableRestController.class);
-    classesToImport.add(SignatureRestController.class);
     classesToImport.add(PermittableService.class);
 
-    final boolean storeTenantKeysAtInitialization = (boolean)importingClassMetadata
-        .getAnnotationAttributes(EnableAnubis.class.getTypeName())
-        .get("storeTenantKeysAtInitialization");
+    final boolean provideSignatureRestController = (boolean)importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("provideSignatureRestController");
+    final boolean provideSignatureStorage = (boolean) importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("provideSignatureStorage");
+    final boolean generateEmptyInitializeEndpoint = (boolean)importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("generateEmptyInitializeEndpoint");
 
-    if (storeTenantKeysAtInitialization) {
-      classesToImport.add(SignatureCreatorRestController.class);
+    if (provideSignatureRestController) {
+      classesToImport.add(SignatureRestController.class);
+
+      if (provideSignatureStorage)
+        classesToImport.add(SignatureCreatorRestController.class);
+    }
+
+    if (provideSignatureStorage)
       classesToImport.add(TenantAuthorizationDataRepository.class);
 
-      final boolean generateEmptyInitializeEndpoint = (boolean)importingClassMetadata
-          .getAnnotationAttributes(EnableAnubis.class.getTypeName())
-          .get("generateEmptyInitializeEndpoint");
-
-      if (generateEmptyInitializeEndpoint)
-        classesToImport.add(EmptyInitializeResourcesRestController.class);
-    }
+    if (generateEmptyInitializeEndpoint)
+      classesToImport.add(EmptyInitializeResourcesRestController.class);
 
 
     return classesToImport.stream().map(Class::getCanonicalName).toArray(String[]::new);

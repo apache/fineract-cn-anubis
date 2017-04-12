@@ -111,11 +111,6 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     return new Signature(applicationSignature.getPublicKeyMod(), applicationSignature.getPublicKeyExp());
   }
 
-  public Optional<ApplicationSignatureSet> getSignatureSet(final String timestamp) {
-    Assert.notNull(timestamp);
-    return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToSignatureSet);
-  }
-
   public void deleteSignatureSet(final String timestamp) {
     Assert.notNull(timestamp);
     //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
@@ -302,5 +297,27 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     return StreamSupport.stream(result.spliterator(), false)
             .map(x -> x.get(TIMESTAMP_COLUMN, String.class))
             .collect(Collectors.toList());
+  }
+
+  public Optional<ApplicationSignatureSet> getSignatureSet(final String timestamp) {
+    Assert.notNull(timestamp);
+    return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToSignatureSet);
+  }
+
+  @Override
+  public Optional<ApplicationSignatureSet> getLatestSignatureSet() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getSignatureSet);
+  }
+
+  @Override
+  public Optional<Signature> getLatestApplicationSignature() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getApplicationSignature);
+  }
+
+  private Optional<String> getMostRecentTimestamp() {
+    return getAllSignatureSetKeyTimestamps().stream()
+            .max(String::compareTo);
   }
 }
