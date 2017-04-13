@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.config;
+package io.mifos.anubis.provider;
 
-
-import io.mifos.anubis.api.v1.domain.Signature;
-
-import java.util.Optional;
-
-public interface TenantSignatureProvider {
-  /**
-   *
-   * @param version The version of the signature to get.
-   * @return The public keys that the identity service uses for signing tokens.
-   * @throws IllegalArgumentException if the tenant context is not set.
-   */
-  Optional<Signature> getSignature(String version) throws IllegalArgumentException;
+/**
+ * @author Myrle Krantz
+ */
+public class InvalidKeyTimestampException extends Exception {
+  InvalidKeyTimestampException(final String version) {
+    super("Invalid key version: " +  version);
+  }
 }

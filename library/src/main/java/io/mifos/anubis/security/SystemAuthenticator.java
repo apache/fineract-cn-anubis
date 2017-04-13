@@ -20,7 +20,7 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.TokenConstants;
-import io.mifos.anubis.provider.InvalidKeyVersionException;
+import io.mifos.anubis.provider.InvalidKeyTimestampException;
 import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.TokenType;
@@ -62,16 +62,16 @@ public class SystemAuthenticator {
   public AnubisAuthentication authenticate(
       final String user,
       final String token,
-      final String version) {
+      final String timestamp) {
     if (!user.equals(ApiConstants.SYSTEM_SU))
       throw AmitAuthenticationException.invalidHeader();
 
     try {
       final JwtParser jwtParser = Jwts.parser()
-          .setSigningKey(systemRsaKeyProvider.getPublicKey(version))
+          .setSigningKey(systemRsaKeyProvider.getPublicKey(timestamp))
           .requireAudience(applicationName.toString())
           .requireIssuer(TokenType.SYSTEM.getIssuer())
-          .require(TokenConstants.JWT_VERSION_CLAIM, TokenConstants.VERSION);
+          .require(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, timestamp);
 
       TenantContextHolder.identifier().ifPresent(jwtParser::requireSubject);
 
@@ -82,8 +82,8 @@ public class SystemAuthenticator {
     catch (final JwtException e) {
       logger.debug("token = {}", token);
       throw AmitAuthenticationException.invalidToken();
-    } catch (final InvalidKeyVersionException e) {
-      throw AmitAuthenticationException.invalidTokenVersion("system", version);
+    } catch (final InvalidKeyTimestampException e) {
+      throw AmitAuthenticationException.invalidTokenKeyTimestamp("system", timestamp);
     }
   }
 }

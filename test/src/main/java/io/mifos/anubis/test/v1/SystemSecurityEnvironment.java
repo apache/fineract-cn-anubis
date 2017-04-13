@@ -24,7 +24,7 @@ import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.TokenContent;
 import io.mifos.anubis.api.v1.domain.TokenPermission;
-import io.mifos.anubis.provider.InvalidKeyVersionException;
+import io.mifos.anubis.provider.InvalidKeyTimestampException;
 import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.security.SystemAuthenticator;
 import io.mifos.anubis.service.PermittableService;
@@ -45,7 +45,10 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -54,18 +57,20 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SystemSecurityEnvironment {
-  private final static String LOGGER_NAME = "anubis-test-logger";
+  final static String LOGGER_NAME = "anubis-test-logger";
 
   private final TenantAccessTokenSerializer tenantAccessTokenSerializer;
   private final SystemAccessTokenSerializer systemAccessTokenSerializer;
+  private final String systemKeyTimestamp;
   private final PublicKey systemPublicKey;
   private final PrivateKey systemPrivateKey;
   private final Map<String, RsaKeyPairFactory.KeyPairHolder> tenantKeyPairHolders;
 
-  public SystemSecurityEnvironment(final PublicKey systemPublicKey, final PrivateKey systemPrivateKey) {
+  public SystemSecurityEnvironment(final String systemKeyTimestamp, final PublicKey systemPublicKey, final PrivateKey systemPrivateKey) {
     final Gson gson = new GsonBuilder().create();
     this.tenantAccessTokenSerializer = new TenantAccessTokenSerializer(gson);
     this.systemAccessTokenSerializer = new SystemAccessTokenSerializer();
+    this.systemKeyTimestamp = systemKeyTimestamp;
     this.systemPublicKey = systemPublicKey;
     this.systemPrivateKey = systemPrivateKey;
 
@@ -90,6 +95,7 @@ public class SystemSecurityEnvironment {
             .setTenant(tenantName)
             .setRole(RoleConstants.SYSTEM_ADMIN_ROLE_IDENTIFIER)
             .setSecondsToLive(TimeUnit.HOURS.toSeconds(12))
+            .setKeyTimestamp(systemKeyTimestamp)
             .setPrivateKey(systemPrivateKey)
             .setTargetApplicationName(applicationName)
     ).getToken();
@@ -106,6 +112,7 @@ public class SystemSecurityEnvironment {
             .setUser(userName)
             .setTokenContent(getTokenContentForStarEndpoint(applicationNames))
             .setSecondsToLive(TimeUnit.HOURS.toSeconds(10))
+            .setKeyTimestamp(tenantKeyTimestamp())
             .setPrivateKey(tenantPrivateKey())).getToken();
   }
 
@@ -116,6 +123,7 @@ public class SystemSecurityEnvironment {
           final AllowedOperation allowedOperation) {
     return tenantAccessTokenSerializer.build(
             new TenantAccessTokenSerializer.Specification().setPrivateKey(tenantPrivateKey())
+                    .setKeyTimestamp(tenantKeyTimestamp())
                     .setSecondsToLive(100)
                     .setUser(userName)
                     .setTokenContent(generateOnePermissionTokenContent(applicationName, uri, allowedOperation))
@@ -127,6 +135,11 @@ public class SystemSecurityEnvironment {
             = new TokenPermission(applicationName + uri, Collections.singleton(allowedOperation));
 
     return new TokenContent(Collections.singletonList(tokenPermission));
+  }
+
+  public String tenantKeyTimestamp() {
+    return tenantKeyPairHolders.computeIfAbsent(TenantContextHolder.checkedGetIdentifier(),
+            x -> RsaKeyPairFactory.createKeyPair()).getTimestamp();
   }
 
   public RSAPublicKey tenantPublicKey()
@@ -185,7 +198,7 @@ public class SystemSecurityEnvironment {
     try {
       Mockito.doReturn(systemPublicKey).when(systemRsaKeyProvider).getPublicKey(Mockito.anyString());
     }
-    catch (final InvalidKeyVersionException ignored) {}
+    catch (final InvalidKeyTimestampException ignored) {}
 
     final Logger logger = LoggerFactory.getLogger(LOGGER_NAME);
 
@@ -195,7 +208,7 @@ public class SystemSecurityEnvironment {
             permittableService,
             logger);
     try {
-      return (systemAuthenticator.authenticate(forUser, jwtToken, "1") != null);
+      return (systemAuthenticator.authenticate(forUser, jwtToken, systemKeyTimestamp) != null);
     }
     catch (final Exception e)
     {

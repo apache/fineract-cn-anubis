@@ -13,13 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.provider;
+package io.mifos.anubis.api.v1.validation;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.*;
 
 /**
  * @author Myrle Krantz
  */
-public class InvalidKeyVersionException extends Exception {
-  InvalidKeyVersionException(final String version) {
-    super("Invalid key version: " +  version);
-  }
+@SuppressWarnings("unused")
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Constraint(
+        validatedBy = {CheckKeyTimestamp.class}
+)
+public @interface ValidKeyTimestamp {
+  String message() default "Invalid key timestamp.";
+
+  Class<?>[] groups() default {};
+
+  Class<? extends Payload>[] payload() default {};
 }

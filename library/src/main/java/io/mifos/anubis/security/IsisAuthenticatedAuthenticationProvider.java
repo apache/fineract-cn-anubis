@@ -17,7 +17,7 @@ package io.mifos.anubis.security;
 
 import io.jsonwebtoken.*;
 import io.mifos.anubis.api.v1.TokenConstants;
-import io.mifos.anubis.provider.InvalidKeyVersionException;
+import io.mifos.anubis.provider.InvalidKeyTimestampException;
 import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.token.TokenType;
@@ -87,9 +87,9 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
 
       switch (tokenInfo.getType()) {
         case TENANT:
-          return tenantAuthenticator.authenticate(user, x, tokenInfo.getVersion());
+          return tenantAuthenticator.authenticate(user, x, tokenInfo.getKeyTimestamp());
         case SYSTEM:
-          return systemAuthenticator.authenticate(user, x, tokenInfo.getVersion());
+          return systemAuthenticator.authenticate(user, x, tokenInfo.getKeyTimestamp());
         default:
           throw AmitAuthenticationException.invalidTokenIssuer(tokenInfo.getType().getIssuer());
       }
@@ -115,14 +115,14 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
       final Jwt<Header, Claims> jwt = Jwts.parser().setSigningKeyResolver(new SigningKeyResolver() {
         @Override public Key resolveSigningKey(final JwsHeader header, final Claims claims) {
           final TokenType tokenType = getTokenTypeFromClaims(claims);
-          final String version = getVersionFromClaims(claims);
+          final String keyTimestamp = getKeyTimestampFromClaims(claims);
 
           try {
             switch (tokenType) {
               case TENANT:
-                return tenantRsaKeyProvider.getPublicKey(version);
+                return tenantRsaKeyProvider.getPublicKey(keyTimestamp);
               case SYSTEM:
-                return systemRsaKeyProvider.getPublicKey(version);
+                return systemRsaKeyProvider.getPublicKey(keyTimestamp);
               default:
                 throw AmitAuthenticationException.invalidTokenIssuer(tokenType.getIssuer());
             }
@@ -131,9 +131,9 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
           {
             throw AmitAuthenticationException.missingTenant();
           }
-          catch (final InvalidKeyVersionException e)
+          catch (final InvalidKeyTimestampException e)
           {
-            throw AmitAuthenticationException.invalidTokenVersion(tokenType.getIssuer(), version);
+            throw AmitAuthenticationException.invalidTokenKeyTimestamp(tokenType.getIssuer(), keyTimestamp);
           }
         }
 
@@ -148,10 +148,10 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
         throw AmitAuthenticationException.invalidTokenAlgorithm(alg);
       }
 
-      final String version = getVersionFromClaims(jwt.getBody());
+      final String keyTimestamp = getKeyTimestampFromClaims(jwt.getBody());
       final TokenType tokenType = getTokenTypeFromClaims(jwt.getBody());
 
-      return new TokenInfo(tokenType, version);
+      return new TokenInfo(tokenType, keyTimestamp);
     }
     catch (final JwtException e)
     {
@@ -159,13 +159,8 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
     }
   }
 
-  private @Nonnull String getVersionFromClaims(final Claims claims) {
-    final String version = claims.get(TokenConstants.JWT_VERSION_CLAIM, String.class);
-    if (version == null)
-    {
-      return "1";
-    }
-    return version;
+  private @Nonnull String getKeyTimestampFromClaims(final Claims claims) {
+    return claims.get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
   }
 
   private @Nonnull TokenType getTokenTypeFromClaims(final Claims claims) {

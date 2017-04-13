@@ -13,11 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.api.v1.client;
+package io.mifos.anubis.example.nokeystorage;
+
+import io.mifos.anubis.config.EnableAnubis;
+import io.mifos.core.lang.config.EnableServiceException;
+import io.mifos.core.lang.config.EnableTenantContext;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * @author Myrle Krantz
  */
-@SuppressWarnings("WeakerAccess")
-public class TenantNotFoundException extends RuntimeException {
+@Configuration
+@EnableAutoConfiguration
+@EnableTenantContext
+@EnableAnubis(provideSignatureStorage = false)
+@EnableServiceException
+@ComponentScan({
+    "io.mifos.anubis.example.nokeystorage"
+})
+public class ExampleConfiguration {
 }

@@ -16,6 +16,7 @@
 package io.mifos.anubis.example.simple;
 
 import io.mifos.anubis.config.EnableAnubis;
+import io.mifos.core.lang.config.EnableServiceException;
 import io.mifos.core.lang.config.EnableTenantContext;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
@@ -28,6 +29,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableAutoConfiguration
 @EnableTenantContext
 @EnableAnubis
+@EnableServiceException
 @ComponentScan({
     "io.mifos.anubis.example.simple"
 })

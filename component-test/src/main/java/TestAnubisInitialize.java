@@ -16,13 +16,14 @@
 
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
-import io.mifos.anubis.api.v1.client.TenantNotFoundException;
+import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.example.simple.Example;
 import io.mifos.anubis.example.simple.ExampleConfiguration;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.api.util.InvalidTokenException;
+import io.mifos.core.api.util.NotFoundException;
 import io.mifos.core.lang.AutoTenantContext;
 import io.mifos.core.test.env.TestEnvironment;
 import io.mifos.core.test.fixture.TenantDataStoreTestContext;
@@ -34,6 +35,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
@@ -51,6 +53,7 @@ import java.security.interfaces.RSAPublicKey;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class TestAnubisInitialize {
   private static final String APP_NAME = "anubis-v1";
+  private static final String LOGGER_QUALIFIER = "test-logger";
 
   @Configuration
   @EnableFeignClients(basePackages = {"io.mifos.anubis.example.simple"})
@@ -61,7 +64,7 @@ public class TestAnubisInitialize {
       super();
     }
 
-    @Bean()
+    @Bean(name = LOGGER_QUALIFIER)
     public Logger logger() {
       return LoggerFactory.getLogger(APP_NAME + "-logger");
     }
@@ -77,6 +80,11 @@ public class TestAnubisInitialize {
   @Autowired
   Example example;
 
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
+  @Autowired
+  @Qualifier(value = LOGGER_QUALIFIER)
+  Logger logger;
+
   @Test
   public void testBrokenToken()
   {
@@ -87,12 +95,16 @@ public class TestAnubisInitialize {
 
       try {
 
-        final Anubis anubis = AnubisApiFactory.create(testEnvironment.serverURI());
+        final Anubis anubis = AnubisApiFactory.create(testEnvironment.serverURI(), logger);
 
         try (final AutoSeshat ignored2 = new AutoSeshat(brokenSeshatToken)) {
           final TenantApplicationSecurityEnvironmentTestRule securityMock = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
+
+          final String keyTimestamp = securityMock.getSystemSecurityEnvironment().tenantKeyTimestamp();
           final RSAPublicKey publicKey = securityMock.getSystemSecurityEnvironment().tenantPublicKey();
-          anubis.initialize(publicKey.getModulus(), publicKey.getPublicExponent());
+          final Signature signature = new Signature(publicKey.getModulus(), publicKey.getPublicExponent());
+
+          anubis.createSignatureSet(keyTimestamp, signature);
         }
 
         Assert.assertFalse("A call with a broken token should result in an exception thrown.", true);
@@ -139,7 +151,7 @@ public class TestAnubisInitialize {
     }
   }
 
-  @Test(expected = TenantNotFoundException.class)
+  @Test(expected = NotFoundException.class)
   public void testNonExistentTenant() {
     try (final AutoTenantContext ignored = new AutoTenantContext("monster_under_your_bed")) {
       initialize();
@@ -155,4 +167,6 @@ public class TestAnubisInitialize {
       Assert.assertTrue(example.initialized());
     }
   }
+
+  //TODO: tests still needed for getting application key and deleting keysets.
 }

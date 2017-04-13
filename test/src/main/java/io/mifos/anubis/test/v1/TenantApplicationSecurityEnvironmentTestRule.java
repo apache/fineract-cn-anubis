@@ -18,12 +18,15 @@ package io.mifos.anubis.test.v1;
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
+import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.lang.AutoTenantContext;
 import io.mifos.core.lang.TenantContextHolder;
 import io.mifos.core.test.env.TestEnvironment;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
@@ -45,6 +48,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
   private final SystemSecurityEnvironment systemSecurityEnvironment;
   private final BooleanSupplier waitForInitialize;
+  private final Logger logger;
 
   public TenantApplicationSecurityEnvironmentTestRule(final TestEnvironment testEnvironment) {
     this(testEnvironment, () -> true);
@@ -55,6 +59,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     this(testEnvironment.getProperty(SPRING_APPLICATION_NAME_PROPERTY),
             testEnvironment.serverURI(),
             new SystemSecurityEnvironment(
+                    testEnvironment.getSystemKeyTimestamp(),
                     testEnvironment.getSystemPublicKey(),
                     testEnvironment.getSystemPrivateKey()),
             waitForInitialize);
@@ -70,6 +75,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
     this.applicationUri = applicationUri;
     this.systemSecurityEnvironment = systemSecurityEnvironment;
     this.waitForInitialize = waitForInitialize;
+    this.logger = LoggerFactory.getLogger(SystemSecurityEnvironment.LOGGER_NAME);
   }
 
   @Override
@@ -81,15 +87,22 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
 
   public void initializeTenantInApplication()
   {
-    final Anubis anubis = AnubisApiFactory.create(applicationUri);
+    final Anubis anubis = getAnubis();
 
     final String systemToken = systemSecurityEnvironment.systemToken(applicationName);
 
     try (final AutoTenantContext x = new AutoTenantContext(TenantContextHolder.checkedGetIdentifier())) {
       try (final AutoSeshat y = new AutoSeshat(systemToken)) {
+        final String keyTimestamp = systemSecurityEnvironment.tenantKeyTimestamp();
         final RSAPublicKey publicKey = systemSecurityEnvironment.tenantPublicKey();
-        anubis.initialize(publicKey.getModulus(), publicKey.getPublicExponent());
+        final Signature identityManagerSignature = new Signature(publicKey.getModulus(), publicKey.getPublicExponent());
+        anubis.createSignatureSet(keyTimestamp, identityManagerSignature);
+        anubis.initializeResources();
       }}
+  }
+
+  public Anubis getAnubis() {
+    return AnubisApiFactory.create(applicationUri, logger);
   }
 
   public SystemSecurityEnvironment getSystemSecurityEnvironment()

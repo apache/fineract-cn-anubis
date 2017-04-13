@@ -15,9 +15,10 @@
  */
 package io.mifos.anubis.config;
 
-import io.mifos.anubis.controller.InitializeRestController;
+import io.mifos.anubis.controller.EmptyInitializeResourcesRestController;
+import io.mifos.anubis.controller.SignatureCreatorRestController;
+import io.mifos.anubis.controller.SignatureRestController;
 import io.mifos.anubis.controller.PermittableRestController;
-import io.mifos.anubis.filter.InitializationFilter;
 import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.repository.TenantAuthorizationDataRepository;
@@ -56,21 +57,28 @@ class AnubisImportSelector implements ImportSelector {
     classesToImport.add(PermittableRestController.class);
     classesToImport.add(PermittableService.class);
 
-    final boolean storeTenantKeysAtInitialization = (boolean)importingClassMetadata
-        .getAnnotationAttributes(EnableAnubis.class.getTypeName())
-        .get("storeTenantKeysAtInitialization");
+    final boolean provideSignatureRestController = (boolean)importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("provideSignatureRestController");
+    final boolean provideSignatureStorage = (boolean) importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("provideSignatureStorage");
+    final boolean generateEmptyInitializeEndpoint = (boolean)importingClassMetadata
+            .getAnnotationAttributes(EnableAnubis.class.getTypeName())
+            .get("generateEmptyInitializeEndpoint");
 
-    if (storeTenantKeysAtInitialization) {
-      classesToImport.add(InitializationFilter.class);
+    if (provideSignatureRestController) {
+      classesToImport.add(SignatureRestController.class);
+
+      if (provideSignatureStorage)
+        classesToImport.add(SignatureCreatorRestController.class);
+    }
+
+    if (provideSignatureStorage)
       classesToImport.add(TenantAuthorizationDataRepository.class);
 
-      final boolean generateEmptyInitializeEndpoint = (boolean)importingClassMetadata
-          .getAnnotationAttributes(EnableAnubis.class.getTypeName())
-          .get("generateEmptyInitializeEndpoint");
-
-      if (generateEmptyInitializeEndpoint)
-        classesToImport.add(InitializeRestController.class);
-    }
+    if (generateEmptyInitializeEndpoint)
+      classesToImport.add(EmptyInitializeResourcesRestController.class);
 
 
     return classesToImport.stream().map(Class::getCanonicalName).toArray(String[]::new);

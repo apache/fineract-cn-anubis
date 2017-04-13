@@ -23,10 +23,8 @@ public interface TokenConstants {
   String NO_AUTHENTICATION = "N/A";
   String PREFIX = "Bearer ";
 
-  String JWT_VERSION_CLAIM = "/mifos.io/version";
+  String JWT_SIGNATURE_TIMESTAMP_CLAIM = "/mifos.io/signatureTimestamp";
   String JWT_CONTENT_CLAIM = "/mifos.io/tokenContent";
-
-  String VERSION = "1";
 
   String REFRESH_TOKEN_COOKIE_NAME = "org.apache.fineract.refreshToken";
 }

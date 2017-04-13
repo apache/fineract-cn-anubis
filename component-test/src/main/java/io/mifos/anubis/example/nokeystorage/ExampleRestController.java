@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.example.simple;
+package io.mifos.anubis.example.nokeystorage;
 
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.annotation.Permittable;
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
+import io.mifos.anubis.api.v1.domain.Signature;
+import io.mifos.core.lang.security.RsaKeyPairFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,11 +35,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping()
 public class ExampleRestController {
   private boolean initialized = false;
+  private final SpecialTenantSignatureRepository specialTenantSignatureRepository;
+
+  @Autowired
+  public ExampleRestController(final SpecialTenantSignatureRepository specialTenantSignatureRepository) {
+    this.specialTenantSignatureRepository = specialTenantSignatureRepository;
+  }
 
   @RequestMapping(value = "/initialize", method = RequestMethod.POST)
   @Permittable(AcceptedTokenType.SYSTEM)
   public ResponseEntity<Void> initialize()
   {
+    final RsaKeyPairFactory.KeyPairHolder applicationKeyPair = RsaKeyPairFactory.createKeyPair();
+    final RsaKeyPairFactory.KeyPairHolder identityManagerKeyPair = RsaKeyPairFactory.createKeyPair();
+    final Signature applicationSignature = new Signature(applicationKeyPair.getPublicKeyMod(), applicationKeyPair.getPublicKeyExp());
+    final Signature identityManagerSignature = new Signature(identityManagerKeyPair.getPublicKeyMod(), identityManagerKeyPair.getPublicKeyExp());
+
+    final ApplicationSignatureSet applicationSignatureSet = new ApplicationSignatureSet(identityManagerKeyPair.getTimestamp(), applicationSignature, identityManagerSignature);
+
+    this.specialTenantSignatureRepository.addSignatureSet(applicationSignatureSet);
     initialized = true;
     return new ResponseEntity<>(HttpStatus.OK);
   }

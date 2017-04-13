@@ -16,7 +16,7 @@
 package io.mifos.anubis.provider;
 
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.anubis.config.TenantSignatureProvider;
+import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.lang.security.RsaPublicKeyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,22 +30,22 @@ import java.util.Optional;
 @Component
 public class TenantRsaKeyProvider {
 
-  private final TenantSignatureProvider tenantSignatureProvider;
+  private final TenantSignatureRepository tenantSignatureRepository;
 
   @Autowired
-  public TenantRsaKeyProvider(final TenantSignatureProvider tenantSignatureProvider)
+  public TenantRsaKeyProvider(final TenantSignatureRepository tenantSignatureRepository)
   {
-    this.tenantSignatureProvider = tenantSignatureProvider;
+    this.tenantSignatureRepository = tenantSignatureRepository;
   }
 
-  public PublicKey getPublicKey(final String tokenVersion) throws InvalidKeyVersionException {
+  public PublicKey getPublicKey(final String keyTimestamp) throws InvalidKeyTimestampException {
     final Optional<Signature> tenantAuthorizationData =
-        tenantSignatureProvider.getSignature(tokenVersion);
+        tenantSignatureRepository.getIdentityManagerSignature(keyTimestamp);
 
     return
         tenantAuthorizationData.map(x -> new RsaPublicKeyBuilder()
         .setPublicKeyMod(x.getPublicKeyMod())
         .setPublicKeyExp(x.getPublicKeyExp())
-        .build()).orElseThrow(() -> new InvalidKeyVersionException(tokenVersion + " + not initialized."));
+        .build()).orElseThrow(() -> new InvalidKeyTimestampException(keyTimestamp + " + not initialized."));
   }
 }
