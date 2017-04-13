@@ -208,7 +208,7 @@ public class SystemSecurityEnvironment {
             permittableService,
             logger);
     try {
-      return (systemAuthenticator.authenticate(forUser, jwtToken, "1") != null);
+      return (systemAuthenticator.authenticate(forUser, jwtToken, systemKeyTimestamp) != null);
     }
     catch (final Exception e)
     {
