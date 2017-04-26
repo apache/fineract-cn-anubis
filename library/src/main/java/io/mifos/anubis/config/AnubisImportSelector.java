@@ -29,6 +29,7 @@ import io.mifos.anubis.security.TenantAuthenticator;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.SystemAccessTokenSerializer;
 import io.mifos.anubis.token.TenantAccessTokenSerializer;
+import io.mifos.anubis.token.TenantRefreshTokenSerializer;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
@@ -46,8 +47,9 @@ class AnubisImportSelector implements ImportSelector {
     classesToImport.add(TenantRsaKeyProvider.class);
     classesToImport.add(SystemRsaKeyProvider.class);
 
-    classesToImport.add(TenantAccessTokenSerializer.class);
     classesToImport.add(SystemAccessTokenSerializer.class);
+    classesToImport.add(TenantAccessTokenSerializer.class);
+    classesToImport.add(TenantRefreshTokenSerializer.class);
 
     classesToImport.add(IsisAuthenticatedAuthenticationProvider.class);
     classesToImport.add(TenantAuthenticator.class);
