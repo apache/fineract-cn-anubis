@@ -15,20 +15,19 @@
  */
 package io.mifos.anubis.token;
 
-import io.mifos.anubis.api.v1.TokenConstants;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
+import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
+import io.mifos.core.test.domain.TimeStampChecker;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 /**
  * @author Myrle Krantz, Markus Geiss
@@ -55,7 +54,7 @@ public class SystemAccessTokenSerializerTest {
 
   @SuppressWarnings({"unchecked"})
   @Test
-  public void shouldCreateValidSeshatToken() throws Exception {
+  public void shouldCreateValidSystemToken() throws Exception {
 
     final SystemAccessTokenSerializer.Specification specification
         = new SystemAccessTokenSerializer.Specification()
@@ -68,17 +67,13 @@ public class SystemAccessTokenSerializerTest {
 
     final SystemAccessTokenSerializer testSubject = new SystemAccessTokenSerializer();
 
-    final LocalDateTime now = LocalDateTime.now(ZoneId.of("UTC"));
+    final TimeStampChecker timeStampChecker = TimeStampChecker.inTheFuture(Duration.ofSeconds(SECONDS_TO_LIVE));
     final TokenSerializationResult systemToken = testSubject.build(specification);
 
     Assert.assertNotNull(systemToken);
 
     final LocalDateTime expiration = systemToken.getExpiration();
-    final long diff = expiration.toInstant(ZoneOffset.ofHours(0)).getEpochSecond()
-        - now.toInstant(ZoneOffset.ofHours(0)).getEpochSecond();
-
-    Assert.assertTrue("The expiration should be 15(+/- 1) seconds from now.  Instead it is: " + diff,
-        Math.abs(diff - SECONDS_TO_LIVE) <= 1);
+    timeStampChecker.assertCorrect(expiration);
 
     final Jwt<Header, Claims> parsedToken = Jwts
         .parser()

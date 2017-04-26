@@ -19,7 +19,7 @@ package io.mifos.anubis.provider;
  * @author Myrle Krantz
  */
 public class InvalidKeyTimestampException extends Exception {
-  InvalidKeyTimestampException(final String version) {
+  public InvalidKeyTimestampException(final String version) {
     super("Invalid key version: " +  version);
   }
 }

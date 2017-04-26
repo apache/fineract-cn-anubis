@@ -20,6 +20,9 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+/**
+ * @author Myrle Krantz
+ */
 @FeignClient(name="anubis-v1", path="/anubis/v1", configuration = CustomFeignClientsConfiguration.class)
 public interface Example {
   @RequestMapping(value = "initialize", method = RequestMethod.POST)
