@@ -27,6 +27,8 @@ import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
+import io.mifos.core.lang.security.RsaPrivateKeyBuilder;
+import io.mifos.core.lang.security.RsaPublicKeyBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +37,10 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Nonnull;
 import java.math.BigInteger;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -283,6 +289,24 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     return getSignature(row, APPLICATION_PUBLIC_KEY_MOD_COLUMN, APPLICATION_PUBLIC_KEY_EXP_COLUMN);
   }
 
+  private static RsaKeyPairFactory.KeyPairHolder mapRowToKeyPairHolder(final @Nonnull Row row) {
+    final BigInteger publicKeyModulus = row.get(APPLICATION_PUBLIC_KEY_MOD_COLUMN, BigInteger.class);
+    final BigInteger publicKeyExponent = row.get(APPLICATION_PUBLIC_KEY_EXP_COLUMN, BigInteger.class);
+    final BigInteger privateKeyModulus = row.get(APPLICATION_PRIVATE_KEY_MOD_COLUMN, BigInteger.class);
+    final BigInteger privateKeyExponent = row.get(APPLICATION_PRIVATE_KEY_EXP_COLUMN, BigInteger.class);
+
+    final PublicKey publicKey = new RsaPublicKeyBuilder()
+            .setPublicKeyMod(publicKeyModulus)
+            .setPublicKeyExp(publicKeyExponent)
+            .build();
+    final PrivateKey privateKey = new RsaPrivateKeyBuilder()
+            .setPrivateKeyMod(privateKeyModulus)
+            .setPrivateKeyExp(privateKeyExponent)
+            .build();
+    final String timestamp = row.get(TIMESTAMP_COLUMN, String.class);
+    return new RsaKeyPairFactory.KeyPairHolder(timestamp, (RSAPublicKey)publicKey, (RSAPrivateKey)privateKey);
+  }
+
   private static ApplicationSignatureSet mapRowToSignatureSet(final @Nonnull Row row) {
     final String timestamp = row.get(TIMESTAMP_COLUMN, String.class);
     final Signature identityManagerSignature = mapRowToIdentityManagerSignature(row);
@@ -314,6 +338,12 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
   public Optional<Signature> getLatestApplicationSignature() {
     Optional<String> timestamp = getMostRecentTimestamp();
     return timestamp.flatMap(this::getApplicationSignature);
+  }
+
+  @Override
+  public Optional<RsaKeyPairFactory.KeyPairHolder> getLatestApplicationSigningKeyPair() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getRow).map(TenantAuthorizationDataRepository::mapRowToKeyPairHolder);
   }
 
   private Optional<String> getMostRecentTimestamp() {

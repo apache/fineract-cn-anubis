@@ -18,9 +18,7 @@ package io.mifos.anubis.token;
 import io.jsonwebtoken.*;
 import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.provider.InvalidKeyTimestampException;
-import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.security.AmitAuthenticationException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
@@ -36,15 +34,6 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("WeakerAccess")
 @Component
 public class TenantRefreshTokenSerializer {
-
-  final private TenantRsaKeyProvider tenantRsaKeyProvider;
-
-  @SuppressWarnings("SpringJavaAutowiringInspection")
-  @Autowired
-  TenantRefreshTokenSerializer(final TenantRsaKeyProvider tenantRsaKeyProvider) {
-    this.tenantRsaKeyProvider = tenantRsaKeyProvider;
-  }
-
   @SuppressWarnings("WeakerAccess")
   public static class Specification {
     private String keyTimestamp;
@@ -110,7 +99,7 @@ public class TenantRefreshTokenSerializer {
     return new TokenSerializationResult(TokenConstants.PREFIX + jwtBuilder.compact(), expiration);
   }
 
-  public TokenDeserializationResult deserialize(final String refreshToken)
+  public TokenDeserializationResult deserialize(final TenantApplicationRsaKeyProvider tenantRsaKeyProvider, final String refreshToken)
   {
     final Optional<String> tokenString = getJwtTokenString(refreshToken);
 
@@ -121,9 +110,10 @@ public class TenantRefreshTokenSerializer {
       final JwtParser parser = Jwts.parser().setSigningKeyResolver(new SigningKeyResolver() {
         @Override public Key resolveSigningKey(final JwsHeader header, final Claims claims) {
           final String keyTimestamp = getKeyTimestampFromClaims(claims);
+          final String issuingApplication = getIssuingApplicationFromClaims(claims);
 
           try {
-            return tenantRsaKeyProvider.getPublicKey(keyTimestamp);
+            return tenantRsaKeyProvider.getApplicationPublicKey(issuingApplication, keyTimestamp);
           }
           catch (final IllegalArgumentException e)
           {
@@ -164,5 +154,10 @@ public class TenantRefreshTokenSerializer {
   private @Nonnull
   String getKeyTimestampFromClaims(final Claims claims) {
     return claims.get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
+  }
+
+  private @Nonnull
+  String getIssuingApplicationFromClaims(final Claims claims) {
+    return claims.getIssuer();
   }
 }

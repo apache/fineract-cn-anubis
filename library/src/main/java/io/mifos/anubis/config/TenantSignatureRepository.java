@@ -18,7 +18,9 @@ package io.mifos.anubis.config;
 
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
+import io.mifos.core.lang.security.RsaKeyPairFactory;
 
+import java.security.interfaces.RSAPrivateKey;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,4 +44,6 @@ public interface TenantSignatureRepository {
   Optional<Signature> getApplicationSignature(String timestamp);
 
   Optional<Signature> getLatestApplicationSignature();
+
+  Optional<RsaKeyPairFactory.KeyPairHolder> getLatestApplicationSigningKeyPair();
 }
