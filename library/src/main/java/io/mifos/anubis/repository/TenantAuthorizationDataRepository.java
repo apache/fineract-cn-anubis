@@ -16,6 +16,7 @@
 package io.mifos.anubis.repository;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
@@ -26,6 +27,7 @@ import io.mifos.anubis.config.AnubisConstants;
 import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
+import io.mifos.core.lang.ServiceException;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
 import io.mifos.core.lang.security.RsaPrivateKeyBuilder;
 import io.mifos.core.lang.security.RsaPublicKeyBuilder;
@@ -256,13 +258,18 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     final Session tenantSession = cassandraSessionProvider.getTenantSession();
     final Select.Where query = timestampToSignatureQueryMap.computeIfAbsent(timestamp, timestampKey ->
             QueryBuilder.select().from(tableName).where(QueryBuilder.eq(TIMESTAMP_COLUMN, timestampKey)));
-    final Row row = tenantSession.execute(query).one();
-    final Optional<Row> ret = Optional.ofNullable(row);
-    ret.map(TenantAuthorizationDataRepository::mapRowToValid).ifPresent(valid -> {
-      if (!valid)
-        logger.warn("Invalidated keyset for timestamp '" + timestamp + "' requested. Pretending no keyset exists.");
-    });
-    return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
+    try {
+      final Row row = tenantSession.execute(query).one();
+      final Optional<Row> ret = Optional.ofNullable(row);
+      ret.map(TenantAuthorizationDataRepository::mapRowToValid).ifPresent(valid -> {
+        if (!valid)
+          logger.warn("Invalidated keyset for timestamp '" + timestamp + "' requested. Pretending no keyset exists.");
+      });
+      return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
+    }
+    catch (final InvalidQueryException authorizationDataTableProbablyIsntConfiguredYet) {
+      throw new IllegalArgumentException("Tenant not found.");
+    }
   }
 
   private static Boolean mapRowToValid(final @Nonnull Row row) {

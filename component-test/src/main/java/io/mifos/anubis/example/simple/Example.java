@@ -30,4 +30,7 @@ public interface Example {
 
   @RequestMapping(value = "initialize", method = RequestMethod.DELETE)
   void uninitialize();
+
+  @RequestMapping(value = "foo", method = RequestMethod.GET)
+  boolean foo();
 }

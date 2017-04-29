@@ -54,4 +54,10 @@ public class ExampleRestController {
     initialized = false;
     return new ResponseEntity<>(HttpStatus.OK);
   }
+
+  @RequestMapping(value = "/foo", method = RequestMethod.GET)
+  @Permittable(AcceptedTokenType.TENANT)
+  public ResponseEntity<Boolean> foo() {
+    return ResponseEntity.ok(false);
+  }
 }
