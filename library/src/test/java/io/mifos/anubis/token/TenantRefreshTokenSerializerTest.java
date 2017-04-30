@@ -32,6 +32,7 @@ import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * @author Myrle Krantz
@@ -41,6 +42,7 @@ public class TenantRefreshTokenSerializerTest {
   private static final String APPLICATION_NAME = "mifosio-core";
   private static final int SECONDS_TO_LIVE = 15;
   private static final String USER = "who";
+  private static final String ENDPOINT_SET = "what";
   private static RsaKeyPairFactory.KeyPairHolder keyPairHolder;
 
   @BeforeClass
@@ -78,12 +80,36 @@ public class TenantRefreshTokenSerializerTest {
     Assert.assertTrue(expires > issued);
     final String signatureTimestamp = parsedToken.getBody().get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
     Assert.assertEquals(keyPairHolder.getTimestamp(), signatureTimestamp);
+    final String endpointSetClaim = parsedToken.getBody().get(TokenConstants.JWT_ENDPOINT_SET_CLAIM, String.class);
+    Assert.assertEquals(null, endpointSetClaim);
 
     final TokenDeserializationResult tokenDeserializationResult = testSubject.deserialize(getTenantApplicationRsaKeyProvider(), tokenSerializationResult.getToken());
     Assert.assertNotNull(tokenDeserializationResult);
     Assert.assertEquals(APPLICATION_NAME, tokenDeserializationResult.getSourceApplication());
     Assert.assertEquals(USER, tokenDeserializationResult.getUserIdentifier());
-    Assert.assertEquals(tokenDeserializationResult.getExpiration(), tokenDeserializationResult.getExpiration());
+    timeStampChecker.assertCorrect(LocalDateTime.ofInstant(tokenDeserializationResult.getExpiration().toInstant(), ZoneOffset.UTC));
+    Assert.assertEquals(null, tokenDeserializationResult.getEndpointSet());
+  }
+
+  @Test
+  public void shouldCreateValidRefreshTokenWithEndpointSet() throws Exception {
+    final Specification specification = getValidSpecification();
+    specification.setEndpointSet(ENDPOINT_SET);
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+
+    final TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
+
+    @SuppressWarnings("unchecked") final Jwt<Header, Claims> parsedToken = Jwts
+            .parser()
+            .setSigningKey(keyPairHolder.publicKey())
+            .parse(tokenSerializationResult.getToken().substring("Bearer ".length()).trim());
+
+
+    final String endpointSetClaim = parsedToken.getBody().get(TokenConstants.JWT_ENDPOINT_SET_CLAIM, String.class);
+    Assert.assertEquals(ENDPOINT_SET, endpointSetClaim);
+
+    final TokenDeserializationResult tokenDeserializationResult = testSubject.deserialize(getTenantApplicationRsaKeyProvider(), tokenSerializationResult.getToken());
+    Assert.assertEquals(ENDPOINT_SET, tokenDeserializationResult.getEndpointSet());
   }
 
   @Test(expected = IllegalArgumentException.class)

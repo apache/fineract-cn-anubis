@@ -24,6 +24,7 @@ public interface TokenConstants {
   String PREFIX = "Bearer ";
 
   String JWT_SIGNATURE_TIMESTAMP_CLAIM = "/mifos.io/signatureTimestamp";
+  String JWT_ENDPOINT_SET_CLAIM = "/mifos.io/endpointSet";
   String JWT_CONTENT_CLAIM = "/mifos.io/tokenContent";
 
   String REFRESH_TOKEN_COOKIE_NAME = "org.apache.fineract.refreshToken";

@@ -41,6 +41,7 @@ public class TenantRefreshTokenSerializer {
     private String user;
     private long secondsToLive;
     private String sourceApplication;
+    private String endpointSet = null; //Optional
 
     public Specification setKeyTimestamp(final String keyTimestamp) {
       this.keyTimestamp = keyTimestamp;
@@ -66,6 +67,11 @@ public class TenantRefreshTokenSerializer {
       this.sourceApplication = sourceApplication;
       return this;
     }
+
+    public Specification setEndpointSet(String endpointSet) {
+      this.endpointSet = endpointSet;
+      return this;
+    }
   }
 
   public TokenSerializationResult build(final Specification specification)
@@ -81,6 +87,11 @@ public class TenantRefreshTokenSerializer {
     if (specification.sourceApplication == null) {
       throw new IllegalArgumentException("token source application must not be null.");
     }
+    if (specification.secondsToLive <= 0) {
+      throw new IllegalArgumentException("token secondsToLive must be positive.");
+    }
+
+    final Date expiration = new Date(issued + TimeUnit.SECONDS.toMillis(specification.secondsToLive));
 
     final JwtBuilder jwtBuilder =
             Jwts.builder()
@@ -88,13 +99,10 @@ public class TenantRefreshTokenSerializer {
                     .setSubject(specification.user)
                     .claim(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, specification.keyTimestamp)
                     .setIssuedAt(new Date(issued))
-                    .signWith(SignatureAlgorithm.RS512, specification.privateKey);
-    if (specification.secondsToLive <= 0) {
-      throw new IllegalArgumentException("token secondsToLive must be positive.");
-    }
-
-    final Date expiration = new Date(issued + TimeUnit.SECONDS.toMillis(specification.secondsToLive));
-    jwtBuilder.setExpiration(expiration);
+                    .signWith(SignatureAlgorithm.RS512, specification.privateKey)
+                    .setExpiration(expiration);
+    if (specification.endpointSet != null)
+      jwtBuilder.claim(TokenConstants.JWT_ENDPOINT_SET_CLAIM, specification.endpointSet);
 
     return new TokenSerializationResult(TokenConstants.PREFIX + jwtBuilder.compact(), expiration);
   }
@@ -132,7 +140,11 @@ public class TenantRefreshTokenSerializer {
 
       @SuppressWarnings("unchecked") Jwt<Header, Claims> jwt = parser.parse(token);
 
-      return new TokenDeserializationResult(jwt.getBody().getSubject(), jwt.getBody().getExpiration(), jwt.getBody().getIssuer());
+      return new TokenDeserializationResult(
+              jwt.getBody().getSubject(),
+              jwt.getBody().getExpiration(),
+              jwt.getBody().getIssuer(),
+              jwt.getBody().get(TokenConstants.JWT_ENDPOINT_SET_CLAIM, String.class));
     }
     catch (final JwtException e) {
       throw AmitAuthenticationException.invalidToken();

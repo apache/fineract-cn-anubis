@@ -25,11 +25,17 @@ public class TokenDeserializationResult {
   final private String userIdentifier;
   final private Date expiration;
   final private String sourceApplication;
+  final private String endpointSet;
 
-  TokenDeserializationResult(final String userIdentifier, final Date expiration, final String sourceApplication) {
+  TokenDeserializationResult(
+          final String userIdentifier,
+          final Date expiration,
+          final String sourceApplication,
+          final String endpointSet) {
     this.userIdentifier = userIdentifier;
     this.expiration = expiration;
     this.sourceApplication = sourceApplication;
+    this.endpointSet = endpointSet;
   }
 
   public String getUserIdentifier() {
@@ -42,5 +48,9 @@ public class TokenDeserializationResult {
 
   public String getSourceApplication() {
     return sourceApplication;
+  }
+
+  public String getEndpointSet() {
+    return endpointSet;
   }
 }
