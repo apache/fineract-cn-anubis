@@ -92,8 +92,10 @@ public class TenantAuthenticator {
       );
     }
     catch (final JwtException e) {
+      logger.info("Tenant token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyTimestampException e) {
+      logger.info("Tenant token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidTokenKeyTimestamp("tenant", keyTimestamp);
     }
   }

@@ -82,8 +82,10 @@ public class SystemAuthenticator {
     }
     catch (final JwtException e) {
       logger.debug("token = {}", token);
+      logger.info("System token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyTimestampException e) {
+      logger.info("System token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidTokenKeyTimestamp("system", keyTimestamp);
     }
   }
