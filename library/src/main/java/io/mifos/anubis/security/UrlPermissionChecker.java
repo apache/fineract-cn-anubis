@@ -22,6 +22,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.FilterInvocation;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * @author Myrle Krantz
@@ -48,10 +49,11 @@ public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocatio
     final AnubisAuthentication authentication = (AnubisAuthentication) unAuthentication;
 
     final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-    return authorities.stream()
-        .map(x -> (ApplicationPermission)x)
-        .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
-        .findAny()
-        .map(x -> ACCESS_GRANTED).orElse(ACCESS_DENIED);
+    final Optional<ApplicationPermission> matchedPermission = authorities.stream()
+            .map(x -> (ApplicationPermission) x)
+            .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
+            .findAny();
+
+    return matchedPermission.map(x -> ACCESS_GRANTED).orElse(ACCESS_DENIED);
   }
 }

@@ -27,7 +27,6 @@ import io.mifos.anubis.config.AnubisConstants;
 import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
-import io.mifos.core.lang.ServiceException;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
 import io.mifos.core.lang.security.RsaPrivateKeyBuilder;
 import io.mifos.core.lang.security.RsaPublicKeyBuilder;
@@ -102,6 +101,9 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     Assert.notNull(identityManagerSignature);
 
     //TODO: add validation to make sure this timestamp is more recent than any already stored.
+    logger.info("Creating application signature set for timestamp '" + timestamp +
+            "'. Identity manager signature is: " + identityManagerSignature);
+
     final RsaKeyPairFactory.KeyPairHolder applicationSignature = RsaKeyPairFactory.createKeyPair();
 
     final Session session = cassandraSessionProvider.getTenantSession();
@@ -123,6 +125,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     Assert.notNull(timestamp);
     //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
     //know what's happening.
+    logger.info("Invalidationg signature set for timestamp '" + timestamp + "'.");
     final Session session = cassandraSessionProvider.getTenantSession();
     invalidateEntry(session, timestamp);
   }

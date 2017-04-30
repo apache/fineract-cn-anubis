@@ -62,20 +62,21 @@ public class SystemAuthenticator {
   public AnubisAuthentication authenticate(
       final String user,
       final String token,
-      final String timestamp) {
+      final String keyTimestamp) {
     if (!user.equals(ApiConstants.SYSTEM_SU))
       throw AmitAuthenticationException.invalidHeader();
 
     try {
       final JwtParser jwtParser = Jwts.parser()
-          .setSigningKey(systemRsaKeyProvider.getPublicKey(timestamp))
+          .setSigningKey(systemRsaKeyProvider.getPublicKey(keyTimestamp))
           .requireAudience(applicationName.toString())
           .requireIssuer(TokenType.SYSTEM.getIssuer())
-          .require(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, timestamp);
+          .require(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, keyTimestamp);
 
       TenantContextHolder.identifier().ifPresent(jwtParser::requireSubject);
 
       jwtParser.parse(token);
+      logger.info("System token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
       return new AnubisAuthentication(token, user, permissions);
     }
@@ -83,7 +84,7 @@ public class SystemAuthenticator {
       logger.debug("token = {}", token);
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyTimestampException e) {
-      throw AmitAuthenticationException.invalidTokenKeyTimestamp("system", timestamp);
+      throw AmitAuthenticationException.invalidTokenKeyTimestamp("system", keyTimestamp);
     }
   }
 }
