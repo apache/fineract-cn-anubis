@@ -21,6 +21,7 @@ import io.mifos.anubis.security.ApplicationPermission;
 import io.mifos.anubis.security.IsisAuthenticatedAuthenticationProvider;
 import io.mifos.anubis.security.UrlPermissionChecker;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -42,6 +43,8 @@ import javax.servlet.Filter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
+
 /**
  * @author Myrle Krantz
  */
@@ -49,6 +52,11 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class AnubisSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+  final private Logger logger;
+
+  public AnubisSecurityConfigurerAdapter(final @Qualifier(LOGGER_NAME) Logger logger) {
+    this.logger = logger;
+  }
 
   @PostConstruct
   public void configureSecurityContext()
@@ -83,7 +91,7 @@ public class AnubisSecurityConfigurerAdapter extends WebSecurityConfigurerAdapte
 
   private AccessDecisionManager defaultAccessDecisionManager() {
     final List<AccessDecisionVoter<?>> voters = new ArrayList<>();
-    voters.add(new UrlPermissionChecker());
+    voters.add(new UrlPermissionChecker(logger));
     return new UnanimousBased(voters);
   }
 

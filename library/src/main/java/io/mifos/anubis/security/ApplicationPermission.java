@@ -25,8 +25,10 @@ import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiPredicate;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Myrle Krantz
@@ -71,21 +73,24 @@ public class ApplicationPermission implements GrantedAuthority {
     final boolean opMatches = allowedOperation.containsHttpMethod(method);
     final String[] requestPathSegments = servletPath.split("/");
 
-    if (servletPathSegmentMatchers.size() == requestPathSegments.length + 1)
-      return lastSegmentIsStarSegment(servletPathSegmentMatchers);
-
-    if (servletPathSegmentMatchers.size() > requestPathSegments.length)
+    if (servletPathSegmentMatchers.size() > requestPathSegments.length + 1)
       return false;
 
+    if (servletPathSegmentMatchers.size() == requestPathSegments.length + 1)
+      if (!lastSegmentIsStarSegment(servletPathSegmentMatchers))
+        return false;
+
     if (servletPathSegmentMatchers.size() < requestPathSegments.length)
-      return lastSegmentIsStarSegment(servletPathSegmentMatchers);
+      if (!lastSegmentIsStarSegment(servletPathSegmentMatchers))
+        return false;
 
-    final boolean aNonMappableSegmentExistsInServletPath =
-        IntStream.range(0, servletPathSegmentMatchers.size())
-            .filter(i -> !segmentMatcher.test(servletPathSegmentMatchers.get(i), requestPathSegments[i]))
-            .findFirst().isPresent();
+    final Optional<Integer> indexOfFirstNonMappableSegment =
+            Stream.iterate(0, n -> n + 1)
+                    .limit(Math.min(servletPathSegmentMatchers.size(), requestPathSegments.length))
+                    .filter(i -> !segmentMatcher.test(servletPathSegmentMatchers.get(i), requestPathSegments[i]))
+                    .findFirst();
 
-    return opMatches && !aNonMappableSegmentExistsInServletPath;
+    return opMatches && !indexOfFirstNonMappableSegment.isPresent();
   }
 
   private static boolean lastSegmentIsStarSegment(
@@ -105,5 +110,13 @@ public class ApplicationPermission implements GrantedAuthority {
 
   @Override public int hashCode() {
     return Objects.hash(servletPathSegmentMatchers, allowedOperation);
+  }
+
+  @Override
+  public String toString() {
+    return "ApplicationPermission{" +
+            "servletPathSegmentMatchers='" + servletPathSegmentMatchers.stream().map(PermissionSegmentMatcher::getPermissionSegment).collect(Collectors.joining("/")) +
+            "', allowedOperation=" + allowedOperation +
+            '}';
   }
 }

@@ -21,7 +21,6 @@ import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.provider.InvalidKeyTimestampException;
-import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.security.AmitAuthenticationException;
 import io.mifos.anubis.token.TenantRefreshTokenSerializer.Specification;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
@@ -33,6 +32,7 @@ import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * @author Myrle Krantz
@@ -42,6 +42,7 @@ public class TenantRefreshTokenSerializerTest {
   private static final String APPLICATION_NAME = "mifosio-core";
   private static final int SECONDS_TO_LIVE = 15;
   private static final String USER = "who";
+  private static final String ENDPOINT_SET = "what";
   private static RsaKeyPairFactory.KeyPairHolder keyPairHolder;
 
   @BeforeClass
@@ -53,7 +54,7 @@ public class TenantRefreshTokenSerializerTest {
   @Test
   public void shouldCreateValidRefreshToken() throws Exception {
     final Specification specification = getValidSpecification();
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
 
     final TimeStampChecker timeStampChecker = TimeStampChecker.inTheFuture(Duration.ofSeconds(SECONDS_TO_LIVE));
 
@@ -79,74 +80,117 @@ public class TenantRefreshTokenSerializerTest {
     Assert.assertTrue(expires > issued);
     final String signatureTimestamp = parsedToken.getBody().get(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, String.class);
     Assert.assertEquals(keyPairHolder.getTimestamp(), signatureTimestamp);
+    final String endpointSetClaim = parsedToken.getBody().get(TokenConstants.JWT_ENDPOINT_SET_CLAIM, String.class);
+    Assert.assertEquals(null, endpointSetClaim);
 
-    final TokenDeserializationResult tokenDeserializationResult = testSubject.deserialize(tokenSerializationResult.getToken());
+    final TokenDeserializationResult tokenDeserializationResult = testSubject.deserialize(getTenantApplicationRsaKeyProvider(), tokenSerializationResult.getToken());
     Assert.assertNotNull(tokenDeserializationResult);
     Assert.assertEquals(APPLICATION_NAME, tokenDeserializationResult.getSourceApplication());
     Assert.assertEquals(USER, tokenDeserializationResult.getUserIdentifier());
-    Assert.assertEquals(tokenDeserializationResult.getExpiration(), tokenDeserializationResult.getExpiration());
+    timeStampChecker.assertCorrect(LocalDateTime.ofInstant(tokenDeserializationResult.getExpiration().toInstant(), ZoneOffset.UTC));
+    Assert.assertEquals(null, tokenDeserializationResult.getEndpointSet());
+  }
+
+  @Test
+  public void shouldCreateValidRefreshTokenWithEndpointSet() throws Exception {
+    final Specification specification = getValidSpecification();
+    specification.setEndpointSet(ENDPOINT_SET);
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+
+    final TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
+
+    @SuppressWarnings("unchecked") final Jwt<Header, Claims> parsedToken = Jwts
+            .parser()
+            .setSigningKey(keyPairHolder.publicKey())
+            .parse(tokenSerializationResult.getToken().substring("Bearer ".length()).trim());
+
+
+    final String endpointSetClaim = parsedToken.getBody().get(TokenConstants.JWT_ENDPOINT_SET_CLAIM, String.class);
+    Assert.assertEquals(ENDPOINT_SET, endpointSetClaim);
+
+    final TokenDeserializationResult tokenDeserializationResult = testSubject.deserialize(getTenantApplicationRsaKeyProvider(), tokenSerializationResult.getToken());
+    Assert.assertEquals(ENDPOINT_SET, tokenDeserializationResult.getEndpointSet());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void invalidSecondsToLiveCausesException() throws Exception {
     final Specification specification = getValidSpecification().setSecondsToLive(-1);
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
     testSubject.build(specification);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void missingKeyTimestampCausesException() throws Exception {
     final Specification specification = getValidSpecification().setKeyTimestamp(null);
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
     testSubject.build(specification);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void missingApplicationCausesException() throws Exception {
     final Specification specification = getValidSpecification().setSourceApplication(null);
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
     testSubject.build(specification);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void missingPrivateKeyCausesException() throws Exception {
     final Specification specification = getValidSpecification().setPrivateKey(null);
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
     testSubject.build(specification);
   }
 
   @Test(expected = AmitAuthenticationException.class)
   public void deserializeNullCausesAmitException() throws Exception {
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
-    testSubject.deserialize(null);
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+    testSubject.deserialize(getTenantApplicationRsaKeyProvider(), null);
   }
 
   @Test(expected = AmitAuthenticationException.class)
   public void deserializeUnprefixedTokenCausesAmitException() throws Exception {
-    final TenantRefreshTokenSerializer testSubject = getTestSubject();
-    testSubject.deserialize("randostring");
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+    testSubject.deserialize(getTenantApplicationRsaKeyProvider(), "randostring");
   }
 
   @Test(expected = AmitAuthenticationException.class)
   public void tenantHasNotProvidedAPublicKeyDuringDeserializationCausesAmitException() throws Exception {
     final Specification specification = getValidSpecification();
-    final TenantRsaKeyProvider tenantRsaKeyProvider = Mockito.mock(TenantRsaKeyProvider.class);
-    Mockito.when(tenantRsaKeyProvider.getPublicKey(keyPairHolder.getTimestamp())).thenThrow(new IllegalArgumentException());
+    final TenantApplicationRsaKeyProvider tenantApplicationRsaKeyProvider
+            = Mockito.mock(TenantApplicationRsaKeyProvider.class);
+    Mockito.when(tenantApplicationRsaKeyProvider.getApplicationPublicKey(APPLICATION_NAME, keyPairHolder.getTimestamp()))
+            .thenThrow(new IllegalArgumentException());
 
-    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer(tenantRsaKeyProvider);
-    TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
-    testSubject.deserialize(tokenSerializationResult.getToken());
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+    final TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
+    testSubject.deserialize(tenantApplicationRsaKeyProvider, tokenSerializationResult.getToken());
   }
 
   @Test(expected = AmitAuthenticationException.class)
   public void tenantHasNotProvidedAPublicKeyForKeyTimestampDuringDeserializationCausesAmitException() throws Exception {
     final Specification specification = getValidSpecification();
-    final TenantRsaKeyProvider tenantRsaKeyProvider = Mockito.mock(TenantRsaKeyProvider.class);
-    Mockito.when(tenantRsaKeyProvider.getPublicKey(keyPairHolder.getTimestamp())).thenThrow(new InvalidKeyTimestampException(""));
+    final TenantApplicationRsaKeyProvider tenantApplicationRsaKeyProvider
+            = Mockito.mock(TenantApplicationRsaKeyProvider.class);
+    Mockito.when(tenantApplicationRsaKeyProvider.getApplicationPublicKey(APPLICATION_NAME, keyPairHolder.getTimestamp()))
+            .thenThrow(new InvalidKeyTimestampException(""));
 
-    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer(tenantRsaKeyProvider);
-    TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
-    testSubject.deserialize(tokenSerializationResult.getToken());
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+    final TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
+    testSubject.deserialize(tenantApplicationRsaKeyProvider, tokenSerializationResult.getToken());
+  }
+
+  @Test(expected = AmitAuthenticationException.class)
+  public void tokenIsSignedWithAWrongKeyCausesAmitException() throws Exception {
+    final RsaKeyPairFactory.KeyPairHolder otherKeyPairHolder = RsaKeyPairFactory.createKeyPair();
+
+    final Specification specification = getValidSpecification();
+    final TenantApplicationRsaKeyProvider tenantApplicationRsaKeyProvider
+            = Mockito.mock(TenantApplicationRsaKeyProvider.class);
+    Mockito.when(tenantApplicationRsaKeyProvider.getApplicationPublicKey(APPLICATION_NAME, keyPairHolder.getTimestamp()))
+            .thenReturn(otherKeyPairHolder.publicKey());
+
+    final TenantRefreshTokenSerializer testSubject = new TenantRefreshTokenSerializer();
+    final TokenSerializationResult tokenSerializationResult = testSubject.build(specification);
+    testSubject.deserialize(tenantApplicationRsaKeyProvider, tokenSerializationResult.getToken());
   }
 
   private Specification getValidSpecification() {
@@ -158,10 +202,10 @@ public class TenantRefreshTokenSerializerTest {
             .setSecondsToLive(SECONDS_TO_LIVE);
   }
 
-  private TenantRefreshTokenSerializer getTestSubject() throws InvalidKeyTimestampException {
-    final TenantRsaKeyProvider tenantRsaKeyProvider = Mockito.mock(TenantRsaKeyProvider.class);
-    Mockito.when(tenantRsaKeyProvider.getPublicKey(keyPairHolder.getTimestamp())).thenReturn(keyPairHolder.publicKey());
+  private TenantApplicationRsaKeyProvider getTenantApplicationRsaKeyProvider() throws InvalidKeyTimestampException {
+    final TenantApplicationRsaKeyProvider tenantRsaKeyProvider = Mockito.mock(TenantApplicationRsaKeyProvider.class);
+    Mockito.when(tenantRsaKeyProvider.getApplicationPublicKey(APPLICATION_NAME, keyPairHolder.getTimestamp())).thenReturn(keyPairHolder.publicKey());
 
-    return new TenantRefreshTokenSerializer(tenantRsaKeyProvider);
+    return tenantRsaKeyProvider;
   }
 }

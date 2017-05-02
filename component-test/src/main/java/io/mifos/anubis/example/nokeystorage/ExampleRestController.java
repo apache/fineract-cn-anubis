@@ -53,7 +53,7 @@ public class ExampleRestController {
 
     final ApplicationSignatureSet applicationSignatureSet = new ApplicationSignatureSet(identityManagerKeyPair.getTimestamp(), applicationSignature, identityManagerSignature);
 
-    this.specialTenantSignatureRepository.addSignatureSet(applicationSignatureSet);
+    this.specialTenantSignatureRepository.addSignatureSet(applicationSignatureSet, applicationKeyPair);
     initialized = true;
     return new ResponseEntity<>(HttpStatus.OK);
   }

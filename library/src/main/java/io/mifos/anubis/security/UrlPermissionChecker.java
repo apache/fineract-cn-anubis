@@ -15,6 +15,7 @@
  */
 package io.mifos.anubis.security;
 
+import org.slf4j.Logger;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.core.Authentication;
@@ -22,11 +23,18 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.FilterInvocation;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * @author Myrle Krantz
  */
 public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocation> {
+  private final Logger logger;
+
+  public UrlPermissionChecker(final Logger logger) {
+    this.logger = logger;
+  }
+
   @Override public boolean supports(final ConfigAttribute attribute) {
     return attribute.getAttribute().equals(ApplicationPermission.URL_AUTHORITY);
   }
@@ -48,10 +56,14 @@ public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocatio
     final AnubisAuthentication authentication = (AnubisAuthentication) unAuthentication;
 
     final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-    return authorities.stream()
-        .map(x -> (ApplicationPermission)x)
-        .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
-        .findAny()
-        .map(x -> ACCESS_GRANTED).orElse(ACCESS_DENIED);
+    final Optional<ApplicationPermission> matchedPermission = authorities.stream()
+            .map(x -> (ApplicationPermission) x)
+            .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
+            .findAny();
+
+    matchedPermission.ifPresent(x -> logger.debug("Authorizing access to {} based on permission: {}"
+            , filterInvocation.getRequestUrl(),  x));
+
+    return matchedPermission.map(x -> ACCESS_GRANTED).orElse(ACCESS_DENIED);
   }
 }

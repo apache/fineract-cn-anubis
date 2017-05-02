@@ -18,6 +18,7 @@ package io.mifos.anubis.example.nokeystorage;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.config.TenantSignatureRepository;
+import io.mifos.core.lang.security.RsaKeyPairFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -31,15 +32,38 @@ import java.util.stream.Collectors;
  */
 @Component
 public class SpecialTenantSignatureRepository implements TenantSignatureRepository {
-  private final Map<String, ApplicationSignatureSet> applicationSignatureSetMap = new HashMap<>();
+  private static class AllTheKeyInfos {
+    final ApplicationSignatureSet applicationSignatureSet;
+    final RsaKeyPairFactory.KeyPairHolder applicationKeyPair;
 
-  void addSignatureSet(final ApplicationSignatureSet applicationSignatureSet) {
-    applicationSignatureSetMap.put(applicationSignatureSet.getTimestamp(), applicationSignatureSet);
+    private AllTheKeyInfos(
+            final ApplicationSignatureSet applicationSignatureSet,
+            final RsaKeyPairFactory.KeyPairHolder applicationKeyPair) {
+      this.applicationSignatureSet = applicationSignatureSet;
+      this.applicationKeyPair = applicationKeyPair;
+    }
+
+    ApplicationSignatureSet getApplicationSignatureSet() {
+      return applicationSignatureSet;
+    }
+
+    RsaKeyPairFactory.KeyPairHolder getApplicationKeyPair() {
+      return applicationKeyPair;
+    }
+  }
+  private final Map<String, AllTheKeyInfos> applicationSignatureSetMap = new HashMap<>();
+
+  void addSignatureSet(final ApplicationSignatureSet applicationSignatureSet,
+                       final RsaKeyPairFactory.KeyPairHolder applicationKeyPair) {
+    applicationSignatureSetMap.put(applicationSignatureSet.getTimestamp(),
+            new AllTheKeyInfos(applicationSignatureSet, applicationKeyPair));
   }
 
   @Override
   public Optional<Signature> getIdentityManagerSignature(final String timestamp) throws IllegalArgumentException {
-    final Optional<ApplicationSignatureSet> sigset = Optional.ofNullable(applicationSignatureSetMap.get(timestamp));
+    final Optional<ApplicationSignatureSet> sigset =
+            Optional.ofNullable(applicationSignatureSetMap.get(timestamp))
+                    .map(AllTheKeyInfos::getApplicationSignatureSet);
     return sigset.map(ApplicationSignatureSet::getIdentityManagerSignature);
   }
 
@@ -50,7 +74,8 @@ public class SpecialTenantSignatureRepository implements TenantSignatureReposito
 
   @Override
   public Optional<ApplicationSignatureSet> getSignatureSet(final String timestamp) {
-    return Optional.ofNullable(applicationSignatureSetMap.get(timestamp));
+    return Optional.ofNullable(applicationSignatureSetMap.get(timestamp))
+            .map(AllTheKeyInfos::getApplicationSignatureSet);
   }
 
   @Override
@@ -60,20 +85,30 @@ public class SpecialTenantSignatureRepository implements TenantSignatureReposito
 
   @Override
   public Optional<Signature> getApplicationSignature(final String timestamp) {
-    final Optional<ApplicationSignatureSet> sigset = Optional.ofNullable(applicationSignatureSetMap.get(timestamp));
+    final Optional<ApplicationSignatureSet> sigset
+            = Optional.ofNullable(applicationSignatureSetMap.get(timestamp))
+            .map(AllTheKeyInfos::getApplicationSignatureSet);
     return sigset.map(ApplicationSignatureSet::getApplicationSignature);
   }
 
   @Override
   public Optional<ApplicationSignatureSet> getLatestSignatureSet() {
-    Optional<String> timestamp = getMostRecentTimestamp();
+    final Optional<String> timestamp = getMostRecentTimestamp();
     return timestamp.flatMap(this::getSignatureSet);
   }
 
   @Override
   public Optional<Signature> getLatestApplicationSignature() {
-    Optional<String> timestamp = getMostRecentTimestamp();
+    final Optional<String> timestamp = getMostRecentTimestamp();
     return timestamp.flatMap(this::getApplicationSignature);
+  }
+
+  @Override
+  public Optional<RsaKeyPairFactory.KeyPairHolder> getLatestApplicationSigningKeyPair() {
+    final Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp
+            .flatMap(x -> Optional.ofNullable(applicationSignatureSetMap.get(x)))
+            .map(AllTheKeyInfos::getApplicationKeyPair);
   }
 
   private Optional<String> getMostRecentTimestamp() {

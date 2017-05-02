@@ -16,6 +16,7 @@
 
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
+import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.example.simple.Example;
 import io.mifos.anubis.example.simple.ExampleConfiguration;
@@ -155,6 +156,20 @@ public class TestAnubisInitialize {
   public void testNonExistentTenant() {
     try (final AutoTenantContext ignored = new AutoTenantContext("monster_under_your_bed")) {
       initialize();
+    }
+  }
+
+  @Test(expected = InvalidTokenException.class)
+  public void testAuthenticateWithoutInitialize() {
+    try (final TenantDataStoreTestContext ignored = TenantDataStoreTestContext.forRandomTenantName(cassandraInitializer)) {
+
+      final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
+              = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
+      final String permissionToken = tenantApplicationSecurityEnvironment.getPermissionToken("bubba", "foo", AllowedOperation.READ);
+      try (final AutoUserContext ignored2 = new AutoUserContext("bubba", permissionToken)) {
+        Assert.assertFalse(example.foo());
+        Assert.fail("Not found exception should be thrown when authentication is attempted ");
+      }
     }
   }
 

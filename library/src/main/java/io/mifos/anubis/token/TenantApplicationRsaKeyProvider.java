@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.api.v1;
+package io.mifos.anubis.token;
+
+import io.mifos.anubis.provider.InvalidKeyTimestampException;
+
+import java.security.PublicKey;
 
 /**
  * @author Myrle Krantz
  */
-@SuppressWarnings("unused")
-public interface TokenConstants {
-  String NO_AUTHENTICATION = "N/A";
-  String PREFIX = "Bearer ";
-
-  String JWT_SIGNATURE_TIMESTAMP_CLAIM = "/mifos.io/signatureTimestamp";
-  String JWT_ENDPOINT_SET_CLAIM = "/mifos.io/endpointSet";
-  String JWT_CONTENT_CLAIM = "/mifos.io/tokenContent";
-
-  String REFRESH_TOKEN_COOKIE_NAME = "org.apache.fineract.refreshToken";
+@SuppressWarnings("WeakerAccess")
+public interface TenantApplicationRsaKeyProvider {
+  PublicKey getApplicationPublicKey(String issuingApplication, String timestamp) throws InvalidKeyTimestampException;
 }

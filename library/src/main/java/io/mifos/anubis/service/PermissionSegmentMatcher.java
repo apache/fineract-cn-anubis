@@ -42,7 +42,7 @@ public class PermissionSegmentMatcher {
     return permissionSegment.startsWith("{") && permissionSegment.endsWith("}");
   }
 
-  String getPermissionSegment() { return permissionSegment; }
+  public String getPermissionSegment() { return permissionSegment; }
 
   public boolean matches(final String requestSegment, final String principal, boolean isSu) {
     if (isStarSegment())

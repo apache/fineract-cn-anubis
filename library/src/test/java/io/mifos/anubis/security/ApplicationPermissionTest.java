@@ -149,8 +149,14 @@ public class ApplicationPermissionTest {
         .permittedPath("/{parameter}/").requestedPath("/value")
         .expectedResult(true));
     ret.add(new TestCase("{parameter} without su")
-        .permittedPath("/{parameter}/").requestedPath("/value")
-        .expectedResult(false));
+         .permittedPath("/{parameter}/").requestedPath("/value")
+         .expectedResult(false));
+    ret.add(new TestCase("* at end with request containing more segments")
+         .permittedPath("/roles/*").requestedPath("/users/antony/password")
+         .expectedResult(false));
+    ret.add(new TestCase("* at end with request containing same # segments")
+         .permittedPath("/x/y/z/*").requestedPath("/m/n/o/")
+         .expectedResult(false));
 
     return ret;
   }

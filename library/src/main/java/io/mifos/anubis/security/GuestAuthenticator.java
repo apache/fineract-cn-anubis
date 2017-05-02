@@ -18,10 +18,14 @@ package io.mifos.anubis.security;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.RoleConstants;
 import io.mifos.anubis.service.PermittableService;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+
+import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
 
 /**
  * @author Myrle Krantz
@@ -29,15 +33,20 @@ import java.util.Set;
 @Component
 public class GuestAuthenticator {
   private Set<ApplicationPermission> permissions;
+  private final Logger logger;
 
   @Autowired
-  public GuestAuthenticator(final PermittableService permittableService) {
+  public GuestAuthenticator(final PermittableService permittableService,
+                            final @Qualifier(LOGGER_NAME) Logger logger) {
     this.permissions = permittableService.getPermittableEndpointsAsPermissions(AcceptedTokenType.GUEST);
+    this.logger = logger;
   }
 
   AnubisAuthentication authenticate(final String user) {
     if (!user.equals(RoleConstants.GUEST_USER_IDENTIFIER))
       throw AmitAuthenticationException.invalidHeader();
+
+    logger.info("Guest access \"authenticated\" successfully.", user);
 
     return new AnubisAuthentication(null, RoleConstants.GUEST_USER_IDENTIFIER, permissions);
   }

@@ -16,6 +16,7 @@
 package io.mifos.anubis.repository;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
@@ -27,6 +28,8 @@ import io.mifos.anubis.config.TenantSignatureRepository;
 import io.mifos.core.cassandra.core.CassandraSessionProvider;
 import io.mifos.core.lang.ApplicationName;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
+import io.mifos.core.lang.security.RsaPrivateKeyBuilder;
+import io.mifos.core.lang.security.RsaPublicKeyBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +38,10 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Nonnull;
 import java.math.BigInteger;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +101,9 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     Assert.notNull(identityManagerSignature);
 
     //TODO: add validation to make sure this timestamp is more recent than any already stored.
+    logger.info("Creating application signature set for timestamp '" + timestamp +
+            "'. Identity manager signature is: " + identityManagerSignature);
+
     final RsaKeyPairFactory.KeyPairHolder applicationSignature = RsaKeyPairFactory.createKeyPair();
 
     final Session session = cassandraSessionProvider.getTenantSession();
@@ -115,6 +125,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     Assert.notNull(timestamp);
     //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
     //know what's happening.
+    logger.info("Invalidationg signature set for timestamp '" + timestamp + "'.");
     final Session session = cassandraSessionProvider.getTenantSession();
     invalidateEntry(session, timestamp);
   }
@@ -250,13 +261,18 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     final Session tenantSession = cassandraSessionProvider.getTenantSession();
     final Select.Where query = timestampToSignatureQueryMap.computeIfAbsent(timestamp, timestampKey ->
             QueryBuilder.select().from(tableName).where(QueryBuilder.eq(TIMESTAMP_COLUMN, timestampKey)));
-    final Row row = tenantSession.execute(query).one();
-    final Optional<Row> ret = Optional.ofNullable(row);
-    ret.map(TenantAuthorizationDataRepository::mapRowToValid).ifPresent(valid -> {
-      if (!valid)
-        logger.warn("Invalidated keyset for timestamp '" + timestamp + "' requested. Pretending no keyset exists.");
-    });
-    return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
+    try {
+      final Row row = tenantSession.execute(query).one();
+      final Optional<Row> ret = Optional.ofNullable(row);
+      ret.map(TenantAuthorizationDataRepository::mapRowToValid).ifPresent(valid -> {
+        if (!valid)
+          logger.warn("Invalidated keyset for timestamp '" + timestamp + "' requested. Pretending no keyset exists.");
+      });
+      return ret.filter(TenantAuthorizationDataRepository::mapRowToValid);
+    }
+    catch (final InvalidQueryException authorizationDataTableProbablyIsntConfiguredYet) {
+      throw new IllegalArgumentException("Tenant not found.");
+    }
   }
 
   private static Boolean mapRowToValid(final @Nonnull Row row) {
@@ -281,6 +297,24 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
 
   private static Signature mapRowToApplicationSignature(final @Nonnull Row row) {
     return getSignature(row, APPLICATION_PUBLIC_KEY_MOD_COLUMN, APPLICATION_PUBLIC_KEY_EXP_COLUMN);
+  }
+
+  private static RsaKeyPairFactory.KeyPairHolder mapRowToKeyPairHolder(final @Nonnull Row row) {
+    final BigInteger publicKeyModulus = row.get(APPLICATION_PUBLIC_KEY_MOD_COLUMN, BigInteger.class);
+    final BigInteger publicKeyExponent = row.get(APPLICATION_PUBLIC_KEY_EXP_COLUMN, BigInteger.class);
+    final BigInteger privateKeyModulus = row.get(APPLICATION_PRIVATE_KEY_MOD_COLUMN, BigInteger.class);
+    final BigInteger privateKeyExponent = row.get(APPLICATION_PRIVATE_KEY_EXP_COLUMN, BigInteger.class);
+
+    final PublicKey publicKey = new RsaPublicKeyBuilder()
+            .setPublicKeyMod(publicKeyModulus)
+            .setPublicKeyExp(publicKeyExponent)
+            .build();
+    final PrivateKey privateKey = new RsaPrivateKeyBuilder()
+            .setPrivateKeyMod(privateKeyModulus)
+            .setPrivateKeyExp(privateKeyExponent)
+            .build();
+    final String timestamp = row.get(TIMESTAMP_COLUMN, String.class);
+    return new RsaKeyPairFactory.KeyPairHolder(timestamp, (RSAPublicKey)publicKey, (RSAPrivateKey)privateKey);
   }
 
   private static ApplicationSignatureSet mapRowToSignatureSet(final @Nonnull Row row) {
@@ -314,6 +348,12 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
   public Optional<Signature> getLatestApplicationSignature() {
     Optional<String> timestamp = getMostRecentTimestamp();
     return timestamp.flatMap(this::getApplicationSignature);
+  }
+
+  @Override
+  public Optional<RsaKeyPairFactory.KeyPairHolder> getLatestApplicationSigningKeyPair() {
+    Optional<String> timestamp = getMostRecentTimestamp();
+    return timestamp.flatMap(this::getRow).map(TenantAuthorizationDataRepository::mapRowToKeyPairHolder);
   }
 
   private Optional<String> getMostRecentTimestamp() {

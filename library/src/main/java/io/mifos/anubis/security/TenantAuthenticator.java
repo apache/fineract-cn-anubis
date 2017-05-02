@@ -26,6 +26,7 @@ import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.TokenType;
 import io.mifos.core.lang.ApplicationName;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
+
 /**
  * @author Myrle Krantz
  */
@@ -45,18 +48,21 @@ public class TenantAuthenticator {
   private final String applicationNameWithVersion;
   private final Gson gson;
   private final Set<ApplicationPermission> guestPermissions;
+  private final Logger logger;
 
   @Autowired
   public TenantAuthenticator(
       final TenantRsaKeyProvider tenantRsaKeyProvider,
       final ApplicationName applicationName,
       final PermittableService permittableService,
-      final @Qualifier("anubisGson") Gson gson) {
+      final @Qualifier("anubisGson") Gson gson,
+      final @Qualifier(LOGGER_NAME) Logger logger) {
     this.tenantRsaKeyProvider = tenantRsaKeyProvider;
     this.applicationNameWithVersion = applicationName.toString();
     this.gson = gson;
     this.guestPermissions
         = permittableService.getPermittableEndpointsAsPermissions(AcceptedTokenType.GUEST);
+    this.logger = logger;
   }
 
   AnubisAuthentication authenticate(
@@ -79,13 +85,17 @@ public class TenantAuthenticator {
       final Set<ApplicationPermission> permissions = translatePermissions(tokenContent.getTokenPermissions());
       permissions.addAll(guestPermissions);
 
+      logger.info("Tenant token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
+
       return new AnubisAuthentication(token,
           jwt.getBody().getSubject(), permissions
       );
     }
     catch (final JwtException e) {
+      logger.info("Tenant token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidToken();
     } catch (final InvalidKeyTimestampException e) {
+      logger.info("Tenant token for user {}, with key timestamp {} failed to authenticate. Exception was {}", user, keyTimestamp, e);
       throw AmitAuthenticationException.invalidTokenKeyTimestamp("tenant", keyTimestamp);
     }
   }
