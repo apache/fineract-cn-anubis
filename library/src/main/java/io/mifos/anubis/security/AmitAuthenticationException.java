@@ -67,4 +67,10 @@ public class AmitAuthenticationException extends AuthenticationException {
   public static AmitAuthenticationException passwordExpired() {
     return new AmitAuthenticationException("Users password has expired.");
   }
+
+  @SuppressWarnings("unused") //used in identity
+  public static AmitAuthenticationException applicationMissingPermissions(final String user, final String application) {
+    return new AmitAuthenticationException("User '" + user + "' has not given application '"
+            + application + "' permission to perform all the requested actions in their name.");
+  }
 }

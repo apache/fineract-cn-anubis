@@ -27,7 +27,7 @@ public class TokenDeserializationResult {
   final private String sourceApplication;
   final private String endpointSet;
 
-  TokenDeserializationResult(
+  public TokenDeserializationResult(
           final String userIdentifier,
           final Date expiration,
           final String sourceApplication,
