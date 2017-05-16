@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import io.mifos.anubis.api.v1.client.Anubis;
-import io.mifos.anubis.api.v1.client.AnubisApiFactory;
-import io.mifos.anubis.api.v1.domain.PermittableEndpoint;
-import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
+import io.mifos.anubis.example.simple.ExampleConfiguration;
+import io.mifos.anubis.example.simple.Metrics;
+import io.mifos.anubis.example.simple.MetricsFeignClient;
+import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
+import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.test.env.TestEnvironment;
 import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
 import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -29,42 +31,36 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
+import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author Myrle Krantz
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestPermittableEndpoints {
+public class TestSystemTokenOnSpringEndpoints {
   private static final String APP_NAME = "anubis-v1";
-  private static final String LOGGER_QUALIFIER = "test-logger";
 
   @Configuration
+  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.simple"})
+  @RibbonClient(name = APP_NAME)
   @Import({ExampleConfiguration.class})
-  public static class TestConfiguration {
+  static public class TestConfiguration {
     public TestConfiguration() {
       super();
     }
 
-    @Bean(name=LOGGER_QUALIFIER)
+    @Bean()
     public Logger logger() {
-      return LoggerFactory.getLogger("permittable-test-logger");
+      return LoggerFactory.getLogger("system-token-logger");
     }
   }
-
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
-  @Autowired
-  @Qualifier(value = LOGGER_QUALIFIER)
-  Logger logger;
 
   private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
   private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
@@ -76,18 +72,20 @@ public class TestPermittableEndpoints {
           .around(cassandraInitializer)
           .around(tenantDataStoreContext);
 
+  @Rule
+  public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
+          = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
+
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
+  @Autowired
+  protected MetricsFeignClient example;
+
+
   @Test
-  public void shouldFindPermittableEndpoints() throws Exception {
-    final Anubis anubis = AnubisApiFactory.create(TestPermittableEndpoints.testEnvironment.serverURI(), logger);
-    final List<PermittableEndpoint> permittableEndpoints = anubis.getPermittableEndpoints();
-    Assert.assertNotNull(permittableEndpoints);
-    Assert.assertEquals(6, permittableEndpoints.size());
-    Assert.assertTrue(permittableEndpoints.containsAll(Arrays.asList(
-        new PermittableEndpoint("anubis-v1/dummy", "GET"),
-        new PermittableEndpoint("anubis-v1/dummy", "DELETE"),
-        new PermittableEndpoint("anubis-v1/dummy", "POST"),
-        new PermittableEndpoint("anubis-v1/parameterized/*/with/*/parameters", "GET", "endpointGroup"),
-        new PermittableEndpoint("anubis-v1/parameterized/{useridentifier}/with/*/parameters", "GET", "endpointGroupWithParameters"))));
-    Assert.assertFalse(permittableEndpoints.contains(new PermittableEndpoint("anubis-v1/systemendpoint", "POST")));
+  public void shouldBeAbleToGetMetrics() throws Exception {
+    try (final AutoUserContext ignored = tenantApplicationSecurityEnvironment.createAutoSeshatContext()) {
+      final Metrics metrics = example.getMetrics();
+      Assert.assertTrue(metrics.getThreads() > 0);
+    }
   }
 }
