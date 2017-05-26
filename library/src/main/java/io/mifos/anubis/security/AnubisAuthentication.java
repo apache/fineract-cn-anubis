@@ -15,6 +15,7 @@
  */
 package io.mifos.anubis.security;
 
+import io.mifos.anubis.api.v1.domain.AnubisPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -32,14 +33,16 @@ class AnubisAuthentication implements Authentication {
 
   private final String token;
   private final String userIdentifier;
+  private final String callingApplicationIdentifier;
   private final Set<ApplicationPermission> applicationPermissions;
 
-  AnubisAuthentication(final String token, final String userIdentifier,
+  AnubisAuthentication(final String token, final String userIdentifier, final String callingApplicationIdentifier,
       final Set<ApplicationPermission> applicationPermissions) {
     authenticated = true;
 
     this.token = token;
     this.userIdentifier = userIdentifier;
+    this.callingApplicationIdentifier = callingApplicationIdentifier;
     this.applicationPermissions = Collections.unmodifiableSet(new HashSet<>(applicationPermissions));
   }
 
@@ -59,8 +62,8 @@ class AnubisAuthentication implements Authentication {
   }
 
   @Override
-  public String getPrincipal() {
-    return userIdentifier;
+  public AnubisPrincipal getPrincipal() {
+    return new AnubisPrincipal(userIdentifier, callingApplicationIdentifier);
   }
 
   @Override

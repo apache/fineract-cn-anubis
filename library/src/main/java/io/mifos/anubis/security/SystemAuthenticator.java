@@ -15,9 +15,7 @@
  */
 package io.mifos.anubis.security;
 
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.provider.InvalidKeyTimestampException;
@@ -69,16 +67,23 @@ public class SystemAuthenticator {
     try {
       final JwtParser jwtParser = Jwts.parser()
           .setSigningKey(systemRsaKeyProvider.getPublicKey(keyTimestamp))
-          .requireAudience(applicationName.toString())
           .requireIssuer(TokenType.SYSTEM.getIssuer())
           .require(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, keyTimestamp);
 
       TenantContextHolder.identifier().ifPresent(jwtParser::requireSubject);
 
-      jwtParser.parse(token);
+      //noinspection unchecked
+      final Jwt<Header, Claims> result = jwtParser.parse(token);
+      if (result.getBody() == null ||
+              result.getBody().getAudience() == null ||
+              !result.getBody().getAudience().equals(applicationName.toString())) {
+        logger.info("System token for user {}, with key timestamp {} failed to authenticate. Audience was set wrong or was not set.", user, keyTimestamp);
+        throw AmitAuthenticationException.invalidToken();
+      }
+
       logger.info("System token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
-      return new AnubisAuthentication(TokenConstants.PREFIX + token, user, permissions);
+      return new AnubisAuthentication(TokenConstants.PREFIX + token, user, result.getBody().getAudience(), permissions);
     }
     catch (final JwtException e) {
       logger.debug("token = {}", token);

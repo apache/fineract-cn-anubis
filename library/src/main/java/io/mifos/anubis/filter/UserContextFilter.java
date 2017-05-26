@@ -38,11 +38,11 @@ public class UserContextFilter extends OncePerRequestFilter {
 
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    Object principal = authentication.getPrincipal();
-    Object credentials = authentication.getCredentials(); 
+    final String principalName = authentication.getName();
+    final Object credentials = authentication.getCredentials();
 
-    if (principal != null && credentials != null) {
-      UserContextHolder.setAccessToken(principal.toString(), credentials.toString());
+    if (principalName != null && credentials != null) {
+      UserContextHolder.setAccessToken(principalName, credentials.toString());
     }
 
     filterChain.doFilter(request, response);

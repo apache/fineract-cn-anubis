@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * @author Myrle Krantz
+ */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public enum AllowedOperation {
   @SerializedName("READ")
