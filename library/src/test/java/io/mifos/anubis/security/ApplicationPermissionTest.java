@@ -214,6 +214,14 @@ public class ApplicationPermissionTest {
             .allowedOperation(AllowedOperation.CHANGE)
             .requestedOperation("POST")
             .expectedResult(true));
+    ret.add(new TestCase("use case from identity")
+            .permittedPath("/applications/*/permissions/*/users/{useridentifier}/enabled")
+            .requestedPath("/applications/bop-v1/permissions/identity__v1__roles/users/Nebamun/enabled")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("identity-v1").forApplication("identity-v1")
+            .allowedOperation(AllowedOperation.CHANGE)
+            .requestedOperation("PUT")
+            .expectedResult(true));
 
     return ret;
   }
