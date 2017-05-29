@@ -40,10 +40,12 @@ public class ApplicationPermissionTest {
     private final String caseName;
     private String permittedPath = "/heart";
     private AllowedOperation allowedOperation = AllowedOperation.READ;
+    private boolean acceptTokenIntendedForForeignApplication = false;
+    private String calledApplication = "grainCounter";
     private String requestedPath = "/heart";
     private String requestedOperation = "GET";
     private String user = "Nebamun";
-    private String application = "grainCounter";
+    private String forApplication = "grainCounter";
     private boolean expectedResult = true;
 
     private TestCase(final String caseName) {
@@ -68,6 +70,26 @@ public class ApplicationPermissionTest {
       return this;
     }
 
+    boolean isAcceptTokenIntendedForForeignApplication() {
+      return acceptTokenIntendedForForeignApplication;
+    }
+
+    TestCase acceptTokenIntendedForForeignApplication(boolean newVal) {
+      this.acceptTokenIntendedForForeignApplication = newVal;
+      return this;
+    }
+
+    String getCalledApplication() {
+      return calledApplication;
+    }
+
+    TestCase calledApplication(final String newVal)
+    {
+      this.calledApplication = newVal;
+      return this;
+    }
+
+
     String getRequestedPath() {
       return requestedPath;
     }
@@ -87,12 +109,18 @@ public class ApplicationPermissionTest {
     }
 
     AnubisPrincipal getPrincipal() {
-      return new AnubisPrincipal(user, application);
+      return new AnubisPrincipal(user, forApplication);
     }
 
     TestCase user(final String newVal)
     {
       this.user = newVal;
+      return this;
+    }
+
+    TestCase forApplication(final String newVal)
+    {
+      this.forApplication = newVal;
       return this;
     }
 
@@ -156,15 +184,35 @@ public class ApplicationPermissionTest {
          .permittedPath("/roles/*").requestedPath("/users/antony/password")
          .expectedResult(false));
     ret.add(new TestCase("* at end with request containing same # segments")
-         .permittedPath("/x/y/z/*").requestedPath("/m/n/o/")
-         .expectedResult(false));
+            .permittedPath("/x/y/z/*").requestedPath("/m/n/o/")
+            .expectedResult(false));
+    ret.add(new TestCase("{applicationidentifier} but permission doesn't allow foreign forApplication")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/b/o/")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("a").forApplication("b")
+            .expectedResult(false));
+    ret.add(new TestCase("{applicationidentifier} and permission does allow foreign forApplication")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/b/o/")
+            .acceptTokenIntendedForForeignApplication(true)
+            .calledApplication("a").forApplication("b")
+            .expectedResult(true));
+    ret.add(new TestCase("No {applicationidentifier} even though permission does allow foreign forApplication")
+            .permittedPath("/m/n/o").requestedPath("/m/b/o/")
+            .acceptTokenIntendedForForeignApplication(true)
+            .calledApplication("a").forApplication("b")
+            .expectedResult(false));
+    ret.add(new TestCase("{applicationidentifier} and permission does allow foreign forApplication, but application isn't foreign.")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/a/o/")
+            .acceptTokenIntendedForForeignApplication(true)
+            .calledApplication("a").forApplication("a")
+            .expectedResult(true));
 
     return ret;
   }
 
   @Test public void test() {
     final ApplicationPermission testSubject =
-        new ApplicationPermission(testCase.getPermittedPath(), testCase.getAllowedOperation(), false);
+        new ApplicationPermission(testCase.getPermittedPath(), testCase.getAllowedOperation(), testCase.isAcceptTokenIntendedForForeignApplication());
 
     final HttpServletRequest requestMock = Mockito.mock(HttpServletRequest.class);
     when(requestMock.getServletPath()).thenReturn(testCase.getRequestedPath());

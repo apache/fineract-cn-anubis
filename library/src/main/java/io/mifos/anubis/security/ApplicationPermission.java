@@ -69,7 +69,7 @@ public class ApplicationPermission implements GrantedAuthority {
     return matchesHelper(
         request.getServletPath(),
         request.getMethod(),
-        (matcher, segment) -> matcher.matches(segment, principal, isSu));
+        (matcher, segment) -> matcher.matches(segment, principal, acceptTokenIntendedForForeignApplication, isSu));
   }
 
   private boolean matchesHelper(final String servletPath, final String method,

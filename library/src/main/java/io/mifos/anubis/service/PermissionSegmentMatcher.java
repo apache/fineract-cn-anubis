@@ -50,11 +50,17 @@ public class PermissionSegmentMatcher {
 
   public String getPermissionSegment() { return permissionSegment; }
 
-  public boolean matches(final String requestSegment, final AnubisPrincipal principal, boolean isSu) {
+  public boolean matches(
+          final String requestSegment,
+          final AnubisPrincipal principal,
+          boolean acceptTokenIntendedForForeignApplication,
+          boolean isSu) {
     if (isStarSegment())
       return true;
     else if (isUserIdentifierSegment())
       return requestSegment.equals(principal.getUser());
+    else if (isApplicationIdentifierSegment() && acceptTokenIntendedForForeignApplication)
+      return requestSegment.equals(principal.getForApplicationName());
     else if (isParameterSegment())
       return isSu;
     else
