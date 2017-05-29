@@ -88,7 +88,7 @@ public class TenantAuthenticator {
       logger.info("Tenant token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
       return new AnubisAuthentication(TokenConstants.PREFIX + token,
-          jwt.getBody().getSubject(), null, permissions
+          jwt.getBody().getSubject(), applicationNameWithVersion, permissions
       );
     }
     catch (final JwtException e) {

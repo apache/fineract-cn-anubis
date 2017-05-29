@@ -17,6 +17,7 @@ package io.mifos.anubis.security;
 
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.core.api.util.ApiConstants;
+import io.mifos.core.lang.ApplicationName;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,11 +42,11 @@ public class ApplicationPermissionTest {
     private String permittedPath = "/heart";
     private AllowedOperation allowedOperation = AllowedOperation.READ;
     private boolean acceptTokenIntendedForForeignApplication = false;
-    private String calledApplication = "grainCounter";
+    private String calledApplication = "graincounter-v1";
     private String requestedPath = "/heart";
     private String requestedOperation = "GET";
     private String user = "Nebamun";
-    private String forApplication = "grainCounter";
+    private String forApplication = "graincounter-v1";
     private boolean expectedResult = true;
 
     private TestCase(final String caseName) {
@@ -79,8 +80,8 @@ public class ApplicationPermissionTest {
       return this;
     }
 
-    String getCalledApplication() {
-      return calledApplication;
+    ApplicationName getCalledApplication() {
+      return ApplicationName.fromSpringApplicationName(calledApplication);
     }
 
     TestCase calledApplication(final String newVal)
@@ -187,24 +188,31 @@ public class ApplicationPermissionTest {
             .permittedPath("/x/y/z/*").requestedPath("/m/n/o/")
             .expectedResult(false));
     ret.add(new TestCase("{applicationidentifier} but permission doesn't allow foreign forApplication")
-            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/b/o/")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/bcde-v1/o/")
             .acceptTokenIntendedForForeignApplication(false)
-            .calledApplication("a").forApplication("b")
+            .calledApplication("abcd-v1").forApplication("bcde-v1")
             .expectedResult(false));
     ret.add(new TestCase("{applicationidentifier} and permission does allow foreign forApplication")
-            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/b/o/")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/bcde-v1/o/")
             .acceptTokenIntendedForForeignApplication(true)
-            .calledApplication("a").forApplication("b")
+            .calledApplication("abcd-v1").forApplication("bcde-v1")
             .expectedResult(true));
     ret.add(new TestCase("No {applicationidentifier} even though permission does allow foreign forApplication")
-            .permittedPath("/m/n/o").requestedPath("/m/b/o/")
+            .permittedPath("/m/n/o").requestedPath("/m/bcde-v1/o/")
             .acceptTokenIntendedForForeignApplication(true)
-            .calledApplication("a").forApplication("b")
+            .calledApplication("abcd-v1").forApplication("bcde-v1")
             .expectedResult(false));
     ret.add(new TestCase("{applicationidentifier} and permission does allow foreign forApplication, but application isn't foreign.")
-            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/a/o/")
+            .permittedPath("/m/{applicationidentifier}/o").requestedPath("/m/abcd-v1/o/")
             .acceptTokenIntendedForForeignApplication(true)
-            .calledApplication("a").forApplication("a")
+            .calledApplication("abcd-v1").forApplication("abcd-v1")
+            .expectedResult(true));
+    ret.add(new TestCase("initialize")
+            .permittedPath("/initialize").requestedPath("/initialize")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("abcd-v1").forApplication("abcd-v1")
+            .allowedOperation(AllowedOperation.CHANGE)
+            .requestedOperation("POST")
             .expectedResult(true));
 
     return ret;
@@ -218,7 +226,7 @@ public class ApplicationPermissionTest {
     when(requestMock.getServletPath()).thenReturn(testCase.getRequestedPath());
     when(requestMock.getMethod()).thenReturn(testCase.getRequestedOperation());
 
-    final boolean matches = testSubject.matches(requestMock, testCase.getPrincipal());
+    final boolean matches = testSubject.matches(requestMock, testCase.getCalledApplication(), testCase.getPrincipal());
 
     Assert.assertEquals("Testcase gave wrong result: '" + testCase.toString() + "'",
         testCase.getExpectedResult(), matches);

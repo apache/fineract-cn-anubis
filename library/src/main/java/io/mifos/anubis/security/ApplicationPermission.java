@@ -18,6 +18,7 @@ package io.mifos.anubis.security;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.service.PermissionSegmentMatcher;
 import io.mifos.core.api.util.ApiConstants;
+import io.mifos.core.lang.ApplicationName;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.FilterInvocation;
 
@@ -60,11 +61,17 @@ public class ApplicationPermission implements GrantedAuthority {
     return URL_AUTHORITY;
   }
 
-  boolean matches(final FilterInvocation filterInvocation, final AnubisPrincipal principal) {
-    return matches(filterInvocation.getRequest(), principal);
+  boolean matches(final FilterInvocation filterInvocation,
+                  final ApplicationName applicationName,
+                  final AnubisPrincipal principal) {
+    return matches(filterInvocation.getRequest(), applicationName, principal);
   }
 
-  boolean matches(final HttpServletRequest request, final AnubisPrincipal principal) {
+  boolean matches(final HttpServletRequest request,
+                  final ApplicationName applicationName,
+                  final AnubisPrincipal principal) {
+    if (!acceptTokenIntendedForForeignApplication && !applicationName.toString().equals(principal.getForApplicationName()))
+      return false;
     boolean isSu = principal.getUser().equals(ApiConstants.SYSTEM_SU);
     return matchesHelper(
         request.getServletPath(),

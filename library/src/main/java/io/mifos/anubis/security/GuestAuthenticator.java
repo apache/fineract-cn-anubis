@@ -18,6 +18,7 @@ package io.mifos.anubis.security;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.RoleConstants;
 import io.mifos.anubis.service.PermittableService;
+import io.mifos.core.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,12 +35,15 @@ import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
 public class GuestAuthenticator {
   private Set<ApplicationPermission> permissions;
   private final Logger logger;
+  private final ApplicationName applicationName;
 
   @Autowired
   public GuestAuthenticator(final PermittableService permittableService,
-                            final @Qualifier(LOGGER_NAME) Logger logger) {
+                            final @Qualifier(LOGGER_NAME) Logger logger,
+                            final ApplicationName applicationName) {
     this.permissions = permittableService.getPermittableEndpointsAsPermissions(AcceptedTokenType.GUEST);
     this.logger = logger;
+    this.applicationName = applicationName;
   }
 
   AnubisAuthentication authenticate(final String user) {
@@ -48,6 +52,6 @@ public class GuestAuthenticator {
 
     logger.info("Guest access \"authenticated\" successfully.", user);
 
-    return new AnubisAuthentication(null, RoleConstants.GUEST_USER_IDENTIFIER, null, permissions);
+    return new AnubisAuthentication(null, RoleConstants.GUEST_USER_IDENTIFIER, applicationName.toString(), permissions);
   }
 }

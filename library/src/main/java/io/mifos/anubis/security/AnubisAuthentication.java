@@ -32,16 +32,16 @@ class AnubisAuthentication implements Authentication {
 
   private final String token;
   private final String userIdentifier;
-  private final String callingApplicationIdentifier;
+  private final String forApplicationName;
   private final Set<ApplicationPermission> applicationPermissions;
 
-  AnubisAuthentication(final String token, final String userIdentifier, final String callingApplicationIdentifier,
+  AnubisAuthentication(final String token, final String userIdentifier, final String forApplicationName,
       final Set<ApplicationPermission> applicationPermissions) {
     authenticated = true;
 
     this.token = token;
     this.userIdentifier = userIdentifier;
-    this.callingApplicationIdentifier = callingApplicationIdentifier;
+    this.forApplicationName = forApplicationName;
     this.applicationPermissions = Collections.unmodifiableSet(new HashSet<>(applicationPermissions));
   }
 
@@ -62,7 +62,7 @@ class AnubisAuthentication implements Authentication {
 
   @Override
   public AnubisPrincipal getPrincipal() {
-    return new AnubisPrincipal(userIdentifier, callingApplicationIdentifier);
+    return new AnubisPrincipal(userIdentifier, forApplicationName);
   }
 
   @Override

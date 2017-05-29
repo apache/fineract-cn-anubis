@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import io.mifos.anubis.example.simple.Example;
 import io.mifos.anubis.example.simple.ExampleConfiguration;
 import io.mifos.anubis.example.simple.Metrics;
 import io.mifos.anubis.example.simple.MetricsFeignClient;
+import io.mifos.anubis.test.v1.SystemSecurityEnvironment;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.api.context.AutoUserContext;
+import io.mifos.core.api.util.NotFoundException;
 import io.mifos.core.test.env.TestEnvironment;
 import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
 import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
@@ -44,7 +47,7 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestSystemTokenOnSpringEndpoints {
+public class TestSystemToken {
   private static final String APP_NAME = "anubis-v1";
 
   @Configuration
@@ -78,14 +81,40 @@ public class TestSystemTokenOnSpringEndpoints {
 
   @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
   @Autowired
-  protected MetricsFeignClient example;
+  protected MetricsFeignClient metricsFeignClient;
+
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiredMembersInspection"})
+  @Autowired
+  Example example;
 
 
   @Test
-  public void shouldBeAbleToGetMetrics() throws Exception {
+  public void shouldBeAbleToGetContactSpringEndpoint() throws Exception {
     try (final AutoUserContext ignored = tenantApplicationSecurityEnvironment.createAutoSeshatContext()) {
-      final Metrics metrics = example.getMetrics();
+      final Metrics metrics = metricsFeignClient.getMetrics();
       Assert.assertTrue(metrics.getThreads() > 0);
+    }
+  }
+
+  @Test
+  public void shouldBeAbleToGetForForeignApplication() throws Exception {
+    final TenantApplicationSecurityEnvironmentTestRule tenantForeignApplicationSecurityEnvironment
+            = new TenantApplicationSecurityEnvironmentTestRule("foreign-v1", testEnvironment.serverURI(),
+            new SystemSecurityEnvironment(testEnvironment.getSystemKeyTimestamp(), testEnvironment.getSystemPublicKey(), testEnvironment.getSystemPrivateKey()));
+    try (final AutoUserContext ignored = tenantForeignApplicationSecurityEnvironment.createAutoSeshatContext()) {
+      final boolean ret = example.forApplication("foreign-v1");
+      Assert.assertTrue(ret);
+    }
+  }
+
+  @Test(expected = NotFoundException.class)
+  public void shouldNotBeAbleToGetForForeignApplicationWhenForeignApplicationNotEnabled() throws Exception {
+    final TenantApplicationSecurityEnvironmentTestRule tenantForeignApplicationSecurityEnvironment
+            = new TenantApplicationSecurityEnvironmentTestRule("foreign-v1", testEnvironment.serverURI(),
+            new SystemSecurityEnvironment(testEnvironment.getSystemKeyTimestamp(), testEnvironment.getSystemPublicKey(), testEnvironment.getSystemPrivateKey()));
+    try (final AutoUserContext ignored = tenantForeignApplicationSecurityEnvironment.createAutoSeshatContext()) {
+      example.notForApplication("foreign-v1");
+      Assert.fail("Shouldn't be able to access for a foreign token in this case.");
     }
   }
 }
