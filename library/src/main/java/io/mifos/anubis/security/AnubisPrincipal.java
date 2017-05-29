@@ -15,6 +15,8 @@
  */
 package io.mifos.anubis.security;
 
+import java.util.Objects;
+
 /**
  * @author Myrle Krantz
  */
@@ -34,5 +36,27 @@ public class AnubisPrincipal {
 
   public String getForApplicationName() {
     return forApplicationName;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    AnubisPrincipal that = (AnubisPrincipal) o;
+    return Objects.equals(user, that.user) &&
+            Objects.equals(forApplicationName, that.forApplicationName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(user, forApplicationName);
+  }
+
+  @Override
+  public String toString() {
+    return "AnubisPrincipal{" +
+            "user='" + user + '\'' +
+            ", forApplicationName='" + forApplicationName + '\'' +
+            '}';
   }
 }
