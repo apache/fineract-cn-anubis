@@ -58,7 +58,7 @@ public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocatio
     final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
     final Optional<ApplicationPermission> matchedPermission = authorities.stream()
             .map(x -> (ApplicationPermission) x)
-            .filter(x -> x.matches(filterInvocation, authentication.getName()))
+            .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
             .findAny();
 
     matchedPermission.ifPresent(x -> logger.debug("Authorizing access to {} based on permission: {}"

@@ -42,7 +42,8 @@ public class ApplicationPermissionTest {
     private AllowedOperation allowedOperation = AllowedOperation.READ;
     private String requestedPath = "/heart";
     private String requestedOperation = "GET";
-    private String principal = "Nebamun";
+    private String user = "Nebamun";
+    private String application = "grainCounter";
     private boolean expectedResult = true;
 
     private TestCase(final String caseName) {
@@ -85,13 +86,13 @@ public class ApplicationPermissionTest {
       return this;
     }
 
-    String getPrincipal() {
-      return principal;
+    AnubisPrincipal getPrincipal() {
+      return new AnubisPrincipal(user, application);
     }
 
-    TestCase principal(final String newVal)
+    TestCase user(final String newVal)
     {
-      principal = newVal;
+      this.user = newVal;
       return this;
     }
 
@@ -145,7 +146,7 @@ public class ApplicationPermissionTest {
     ret.add(new TestCase("{useridentifier} and *")
         .permittedPath("/{useridentifier}/*").requestedPath("/Nebamun/ka/arua")
         .expectedResult(true));
-    ret.add(new TestCase("{parameter} with su").principal(ApiConstants.SYSTEM_SU)
+    ret.add(new TestCase("{parameter} with su").user(ApiConstants.SYSTEM_SU)
         .permittedPath("/{parameter}/").requestedPath("/value")
         .expectedResult(true));
     ret.add(new TestCase("{parameter} without su")
@@ -163,7 +164,7 @@ public class ApplicationPermissionTest {
 
   @Test public void test() {
     final ApplicationPermission testSubject =
-        new ApplicationPermission(testCase.getPermittedPath(), testCase.getAllowedOperation());
+        new ApplicationPermission(testCase.getPermittedPath(), testCase.getAllowedOperation(), false);
 
     final HttpServletRequest requestMock = Mockito.mock(HttpServletRequest.class);
     when(requestMock.getServletPath()).thenReturn(testCase.getRequestedPath());

@@ -111,6 +111,6 @@ public class TenantAuthenticator {
 
   private Stream<ApplicationPermission> getAppPermissionFromTokenPermission(final TokenPermission tokenPermission) {
     final String servletPath = tokenPermission.getPath().substring(applicationNameWithVersion.length());
-    return tokenPermission.getAllowedOperations().stream().map(x -> new ApplicationPermission(servletPath, x));
+    return tokenPermission.getAllowedOperations().stream().map(x -> new ApplicationPermission(servletPath, x, false));
   }
 }

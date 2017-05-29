@@ -15,6 +15,8 @@
  */
 package io.mifos.anubis.service;
 
+import io.mifos.anubis.security.AnubisPrincipal;
+
 import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.List;
@@ -38,17 +40,21 @@ public class PermissionSegmentMatcher {
     return permissionSegment.equals("{useridentifier}");
   }
 
+  private boolean isApplicationIdentifierSegment() {
+    return permissionSegment.equals("{applicationidentifier}");
+  }
+
   boolean isParameterSegment() {
     return permissionSegment.startsWith("{") && permissionSegment.endsWith("}");
   }
 
   public String getPermissionSegment() { return permissionSegment; }
 
-  public boolean matches(final String requestSegment, final String principal, boolean isSu) {
+  public boolean matches(final String requestSegment, final AnubisPrincipal principal, boolean isSu) {
     if (isStarSegment())
       return true;
     else if (isUserIdentifierSegment())
-      return requestSegment.equals(principal);
+      return requestSegment.equals(principal.getUser());
     else if (isParameterSegment())
       return isSu;
     else

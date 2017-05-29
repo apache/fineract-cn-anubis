@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.mifos.anubis.api.v1.domain;
+package io.mifos.anubis.security;
 
 /**
  * @author Myrle Krantz
@@ -23,7 +23,7 @@ public class AnubisPrincipal {
   private final String user;
   private final String forApplicationName;
 
-  public AnubisPrincipal(String user, String forApplicationName) {
+  AnubisPrincipal(String user, String forApplicationName) {
     this.user = user;
     this.forApplicationName = forApplicationName;
   }

@@ -40,11 +40,15 @@ public class ApplicationPermission implements GrantedAuthority {
 
   private final AllowedOperation allowedOperation;
 
+  private final boolean acceptTokenIntendedForForeignApplication;
+
   public ApplicationPermission(
       final String servletPath,
-      final AllowedOperation allowedOperation) {
+      final AllowedOperation allowedOperation,
+      final boolean acceptTokenIntendedForForeignApplication) {
     this.allowedOperation = allowedOperation;
     servletPathSegmentMatchers = PermissionSegmentMatcher.getServletPathSegmentMatchers(servletPath);
+    this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
   }
 
 
@@ -56,12 +60,12 @@ public class ApplicationPermission implements GrantedAuthority {
     return URL_AUTHORITY;
   }
 
-  boolean matches(final FilterInvocation filterInvocation, final String principal) {
+  boolean matches(final FilterInvocation filterInvocation, final AnubisPrincipal principal) {
     return matches(filterInvocation.getRequest(), principal);
   }
 
-  boolean matches(final HttpServletRequest request, final String principal) {
-    boolean isSu = principal.equals(ApiConstants.SYSTEM_SU);
+  boolean matches(final HttpServletRequest request, final AnubisPrincipal principal) {
+    boolean isSu = principal.getUser().equals(ApiConstants.SYSTEM_SU);
     return matchesHelper(
         request.getServletPath(),
         request.getMethod(),

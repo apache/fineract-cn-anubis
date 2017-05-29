@@ -15,7 +15,6 @@
  */
 package io.mifos.anubis.security;
 
-import io.mifos.anubis.api.v1.domain.AnubisPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
