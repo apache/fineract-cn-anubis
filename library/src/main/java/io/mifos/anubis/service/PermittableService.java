@@ -63,7 +63,7 @@ public class PermittableService {
 
     return Collections.unmodifiableSet(
         permittableEndpoints.stream()
-            .map(x -> new ApplicationPermission(x.getPath(), mapHttpMethod(x.getMethod())))
+            .map(x -> new ApplicationPermission(x.getPath(), mapHttpMethod(x.getMethod()), x.isAcceptTokenIntendedForForeignApplication()))
             .collect(Collectors.toSet()));
   }
 
@@ -105,6 +105,8 @@ public class PermittableService {
         permittableEndpoint.setPath("/initialize");
 
       permittableEndpoint.setMethod("POST");
+
+      permittableEndpoint.setAcceptTokenIntendedForForeignApplication(false);
 
       permittableEndpoints.add(permittableEndpoint);
     }
@@ -148,6 +150,7 @@ public class PermittableService {
                           whatINeedToBuildAPermittableEndpoint));
                   permittableEndpoint.setMethod(method.name());
                   permittableEndpoint.setGroupId(whatINeedToBuildAPermittableEndpoint.annotation.groupId());
+                  permittableEndpoint.setAcceptTokenIntendedForForeignApplication(whatINeedToBuildAPermittableEndpoint.annotation.acceptTokenIntendedForForeignApplication());
                   permittableEndpoints.add(permittableEndpoint);
                 })
             ));
@@ -212,6 +215,11 @@ public class PermittableService {
       @Override
       public String permittedEndpoint() {
         return "";
+      }
+
+      @Override
+      public boolean acceptTokenIntendedForForeignApplication() {
+        return false;
       }
     };
   }

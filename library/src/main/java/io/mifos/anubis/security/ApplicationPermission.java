@@ -18,6 +18,7 @@ package io.mifos.anubis.security;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.service.PermissionSegmentMatcher;
 import io.mifos.core.api.util.ApiConstants;
+import io.mifos.core.lang.ApplicationName;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.FilterInvocation;
 
@@ -40,11 +41,15 @@ public class ApplicationPermission implements GrantedAuthority {
 
   private final AllowedOperation allowedOperation;
 
+  private final boolean acceptTokenIntendedForForeignApplication;
+
   public ApplicationPermission(
       final String servletPath,
-      final AllowedOperation allowedOperation) {
+      final AllowedOperation allowedOperation,
+      final boolean acceptTokenIntendedForForeignApplication) {
     this.allowedOperation = allowedOperation;
     servletPathSegmentMatchers = PermissionSegmentMatcher.getServletPathSegmentMatchers(servletPath);
+    this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
   }
 
 
@@ -56,16 +61,22 @@ public class ApplicationPermission implements GrantedAuthority {
     return URL_AUTHORITY;
   }
 
-  boolean matches(final FilterInvocation filterInvocation, final String principal) {
-    return matches(filterInvocation.getRequest(), principal);
+  boolean matches(final FilterInvocation filterInvocation,
+                  final ApplicationName applicationName,
+                  final AnubisPrincipal principal) {
+    return matches(filterInvocation.getRequest(), applicationName, principal);
   }
 
-  boolean matches(final HttpServletRequest request, final String principal) {
-    boolean isSu = principal.equals(ApiConstants.SYSTEM_SU);
+  boolean matches(final HttpServletRequest request,
+                  final ApplicationName applicationName,
+                  final AnubisPrincipal principal) {
+    if (!acceptTokenIntendedForForeignApplication && !applicationName.toString().equals(principal.getForApplicationName()))
+      return false;
+    boolean isSu = principal.getUser().equals(ApiConstants.SYSTEM_SU);
     return matchesHelper(
         request.getServletPath(),
         request.getMethod(),
-        (matcher, segment) -> matcher.matches(segment, principal, isSu));
+        (matcher, segment) -> matcher.matches(segment, principal, acceptTokenIntendedForForeignApplication, isSu));
   }
 
   private boolean matchesHelper(final String servletPath, final String method,

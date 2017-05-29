@@ -15,6 +15,7 @@
  */
 package io.mifos.anubis.security;
 
+import io.mifos.core.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
@@ -30,9 +31,11 @@ import java.util.Optional;
  */
 public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocation> {
   private final Logger logger;
+  private final ApplicationName applicationName;
 
-  public UrlPermissionChecker(final Logger logger) {
+  public UrlPermissionChecker(final Logger logger, final ApplicationName applicationName) {
     this.logger = logger;
+    this.applicationName = applicationName;
   }
 
   @Override public boolean supports(final ConfigAttribute attribute) {
@@ -58,7 +61,7 @@ public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocatio
     final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
     final Optional<ApplicationPermission> matchedPermission = authorities.stream()
             .map(x -> (ApplicationPermission) x)
-            .filter(x -> x.matches(filterInvocation, authentication.getPrincipal()))
+            .filter(x -> x.matches(filterInvocation, applicationName, authentication.getPrincipal()))
             .findAny();
 
     matchedPermission.ifPresent(x -> logger.debug("Authorizing access to {} based on permission: {}"

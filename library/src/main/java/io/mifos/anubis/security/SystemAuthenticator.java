@@ -15,9 +15,7 @@
  */
 package io.mifos.anubis.security;
 
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.TokenConstants;
 import io.mifos.anubis.provider.InvalidKeyTimestampException;
@@ -25,7 +23,6 @@ import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.TokenType;
 import io.mifos.core.api.util.ApiConstants;
-import io.mifos.core.lang.ApplicationName;
 import io.mifos.core.lang.TenantContextHolder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,18 +39,15 @@ import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
 @Component
 public class SystemAuthenticator {
   private final SystemRsaKeyProvider systemRsaKeyProvider;
-  private final ApplicationName applicationName;
   private final Set<ApplicationPermission> permissions;
   private final Logger logger;
 
   @Autowired
   public SystemAuthenticator(
           final SystemRsaKeyProvider systemRsaKeyProvider,
-          final ApplicationName applicationName,
           final PermittableService permittableService,
           final @Qualifier(LOGGER_NAME) Logger logger) {
     this.systemRsaKeyProvider = systemRsaKeyProvider;
-    this.applicationName = applicationName;
     this.permissions = permittableService.getPermittableEndpointsAsPermissions(AcceptedTokenType.SYSTEM);
     this.logger = logger;
   }
@@ -69,16 +63,22 @@ public class SystemAuthenticator {
     try {
       final JwtParser jwtParser = Jwts.parser()
           .setSigningKey(systemRsaKeyProvider.getPublicKey(keyTimestamp))
-          .requireAudience(applicationName.toString())
           .requireIssuer(TokenType.SYSTEM.getIssuer())
           .require(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, keyTimestamp);
 
       TenantContextHolder.identifier().ifPresent(jwtParser::requireSubject);
 
-      jwtParser.parse(token);
+      //noinspection unchecked
+      final Jwt<Header, Claims> result = jwtParser.parse(token);
+      if (result.getBody() == null ||
+              result.getBody().getAudience() == null) {
+        logger.info("System token for user {}, with key timestamp {} failed to authenticate. Audience was not set.", user, keyTimestamp);
+        throw AmitAuthenticationException.invalidToken();
+      }
+
       logger.info("System token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
-      return new AnubisAuthentication(TokenConstants.PREFIX + token, user, permissions);
+      return new AnubisAuthentication(TokenConstants.PREFIX + token, user, result.getBody().getAudience(), permissions);
     }
     catch (final JwtException e) {
       logger.debug("token = {}", token);

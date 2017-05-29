@@ -19,6 +19,7 @@ import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.annotation.Permittable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,5 +60,18 @@ public class ExampleRestController {
   @Permittable(AcceptedTokenType.TENANT)
   public ResponseEntity<Boolean> foo() {
     return ResponseEntity.ok(false);
+  }
+
+  @RequestMapping(value = "/{applicationidentifier}/forapplication", method = RequestMethod.GET)
+  @Permittable(value = AcceptedTokenType.SYSTEM, permittedEndpoint = "/{applicationidentifier}/forapplication", acceptTokenIntendedForForeignApplication = true)
+  public ResponseEntity<Boolean> forApplication(@PathVariable("applicationidentifier") final String applicationIdentifier) {
+    return ResponseEntity.ok(true);
+  }
+
+  @SuppressWarnings("DefaultAnnotationParam")
+  @RequestMapping(value = "/{applicationidentifier}/notforapplication", method = RequestMethod.GET)
+  @Permittable(value = AcceptedTokenType.SYSTEM, permittedEndpoint = "/{applicationidentifier}/forapplication", acceptTokenIntendedForForeignApplication = false)
+  public ResponseEntity<Boolean> notForApplication(@PathVariable("applicationidentifier") final String applicationIdentifier) {
+    return ResponseEntity.ok(true);
   }
 }

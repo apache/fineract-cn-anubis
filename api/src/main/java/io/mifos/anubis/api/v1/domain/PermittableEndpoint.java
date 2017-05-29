@@ -36,6 +36,8 @@ public class PermittableEndpoint {
   @Nullable
   private String groupId;
 
+  private boolean acceptTokenIntendedForForeignApplication;
+
   public PermittableEndpoint() {
     super();
   }
@@ -50,6 +52,13 @@ public class PermittableEndpoint {
     this.path = path;
     this.method = method;
     this.groupId = groupId;
+  }
+
+  public PermittableEndpoint(String path, String method, String groupId, boolean acceptTokenIntendedForForeignApplication) {
+    this.path = path;
+    this.method = method;
+    this.groupId = groupId;
+    this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
   }
 
   public String getPath() {
@@ -76,19 +85,28 @@ public class PermittableEndpoint {
     this.groupId = groupId;
   }
 
+  public boolean isAcceptTokenIntendedForForeignApplication() {
+    return acceptTokenIntendedForForeignApplication;
+  }
+
+  public void setAcceptTokenIntendedForForeignApplication(boolean acceptTokenIntendedForForeignApplication) {
+    this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     PermittableEndpoint that = (PermittableEndpoint) o;
-    return Objects.equals(path, that.path) &&
+    return acceptTokenIntendedForForeignApplication == that.acceptTokenIntendedForForeignApplication &&
+            Objects.equals(path, that.path) &&
             Objects.equals(method, that.method) &&
             Objects.equals(groupId, that.groupId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(path, method, groupId);
+    return Objects.hash(path, method, groupId, acceptTokenIntendedForForeignApplication);
   }
 
   @Override
@@ -97,6 +115,7 @@ public class PermittableEndpoint {
             "path='" + path + '\'' +
             ", method='" + method + '\'' +
             ", groupId='" + groupId + '\'' +
+            ", acceptTokenIntendedForForeignApplication=" + acceptTokenIntendedForForeignApplication +
             '}';
   }
 }

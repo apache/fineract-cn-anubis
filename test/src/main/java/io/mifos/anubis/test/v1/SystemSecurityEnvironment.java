@@ -34,7 +34,6 @@ import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.api.util.ApiConstants;
 import io.mifos.core.api.util.UserContextHolder;
-import io.mifos.core.lang.ApplicationName;
 import io.mifos.core.lang.TenantContextHolder;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
 import org.mockito.Mockito;
@@ -204,7 +203,6 @@ public class SystemSecurityEnvironment {
 
     final SystemAuthenticator systemAuthenticator = new SystemAuthenticator(
             systemRsaKeyProvider,
-            ApplicationName.appNameWithVersion(forService, forServiceVersion),
             permittableService,
             logger);
     try {

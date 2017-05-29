@@ -17,6 +17,7 @@ package io.mifos.anubis.example.simple;
 
 import io.mifos.core.api.util.CustomFeignClientsConfiguration;
 import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -33,4 +34,10 @@ public interface Example {
 
   @RequestMapping(value = "foo", method = RequestMethod.GET)
   boolean foo();
+
+  @RequestMapping(value = "{applicationidentifier}/forapplication", method = RequestMethod.GET)
+  boolean forApplication(@PathVariable("applicationidentifier") final String applicationIdentifier);
+
+  @RequestMapping(value = "{applicationidentifier}/notforapplication", method = RequestMethod.GET)
+  boolean notForApplication(@PathVariable("applicationidentifier") final String applicationIdentifier);
 }

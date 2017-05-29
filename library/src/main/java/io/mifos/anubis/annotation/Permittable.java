@@ -28,4 +28,5 @@ public @interface Permittable {
   AcceptedTokenType value() default AcceptedTokenType.TENANT;
   String groupId() default "";
   String permittedEndpoint() default "";
+  boolean acceptTokenIntendedForForeignApplication() default false;
 }
