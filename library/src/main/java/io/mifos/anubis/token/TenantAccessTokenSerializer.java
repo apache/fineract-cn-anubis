@@ -50,6 +50,7 @@ public class TenantAccessTokenSerializer {
     private String user;
     private TokenContent tokenContent;
     private long secondsToLive;
+    private String sourceApplication;
 
     public Specification setKeyTimestamp(final String keyTimestamp) {
       this.keyTimestamp = keyTimestamp;
@@ -63,6 +64,11 @@ public class TenantAccessTokenSerializer {
 
     public Specification setUser(final String user) {
       this.user = user;
+      return this;
+    }
+
+    public Specification setSourceApplication(final String applicationIdentifier) {
+      this.sourceApplication = applicationIdentifier;
       return this;
     }
 
@@ -89,12 +95,16 @@ public class TenantAccessTokenSerializer {
     if (specification.privateKey == null) {
       throw new IllegalArgumentException("token signature privateKey must not be null.");
     }
+    if (specification.sourceApplication == null) {
+      throw new IllegalArgumentException("token signature source application must not be null.");
+    }
 
     final JwtBuilder jwtBuilder =
         Jwts.builder()
             .setSubject(specification.user)
             .claim(TokenConstants.JWT_SIGNATURE_TIMESTAMP_CLAIM, specification.keyTimestamp)
             .claim(TokenConstants.JWT_CONTENT_CLAIM, serializedTokenContent)
+            .claim(TokenConstants.JWT_SOURCE_APPLICATION_CLAIM, specification.sourceApplication)
             .setIssuer(TokenType.TENANT.getIssuer())
             .setIssuedAt(new Date(issued))
             .signWith(SignatureAlgorithm.RS512, specification.privateKey);

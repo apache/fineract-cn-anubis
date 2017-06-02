@@ -52,6 +52,11 @@ public class GuestAuthenticator {
 
     logger.info("Guest access \"authenticated\" successfully.", user);
 
-    return new AnubisAuthentication(null, RoleConstants.GUEST_USER_IDENTIFIER, applicationName.toString(), permissions);
+    return new AnubisAuthentication(
+            null,
+            RoleConstants.GUEST_USER_IDENTIFIER,
+            applicationName.toString(),
+            applicationName.toString(),
+            permissions);
   }
 }

@@ -57,6 +57,7 @@ public class TenantAccessTokenSerializerTest {
         = new TenantAccessTokenSerializer.Specification()
             .setKeyTimestamp("1234567")
         .setUser(USER)
+        .setSourceApplication("doo-v1")
         .setTokenContent(EXAMPLE_TOKEN_CONTENT)
         .setPrivateKey(keyPairHolder.privateKey())
         .setSecondsToLive(SECONDS_TO_LIVE);
@@ -95,6 +96,7 @@ public class TenantAccessTokenSerializerTest {
     final TenantAccessTokenSerializer.Specification specification
         = new TenantAccessTokenSerializer.Specification()
         .setUser(USER)
+        .setSourceApplication("doo-v1")
         .setTokenContent(EXAMPLE_TOKEN_CONTENT)
         .setPrivateKey(keyPairHolder.privateKey())
         .setSecondsToLive(0);

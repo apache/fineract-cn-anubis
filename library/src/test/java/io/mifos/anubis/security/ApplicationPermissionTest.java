@@ -47,6 +47,7 @@ public class ApplicationPermissionTest {
     private String requestedOperation = "GET";
     private String user = "Nebamun";
     private String forApplication = "graincounter-v1";
+    private String sourceApplication = "identity-v1";
     private boolean expectedResult = true;
 
     private TestCase(final String caseName) {
@@ -110,7 +111,7 @@ public class ApplicationPermissionTest {
     }
 
     AnubisPrincipal getPrincipal() {
-      return new AnubisPrincipal(user, forApplication);
+      return new AnubisPrincipal(user, forApplication, sourceApplication);
     }
 
     TestCase user(final String newVal)
@@ -122,6 +123,12 @@ public class ApplicationPermissionTest {
     TestCase forApplication(final String newVal)
     {
       this.forApplication = newVal;
+      return this;
+    }
+
+    TestCase sourceApplication(final String newVal)
+    {
+      this.sourceApplication = newVal;
       return this;
     }
 
@@ -222,6 +229,33 @@ public class ApplicationPermissionTest {
             .allowedOperation(AllowedOperation.CHANGE)
             .requestedOperation("PUT")
             .expectedResult(true));
+    ret.add(new TestCase("access token acquired from application refresh token accessing its own resource.")
+            .permittedPath("/applications/{applicationidentifier}/permissions")
+            .requestedPath("/applications/bop-v1/permissions")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("identity-v1").forApplication("identity-v1")
+            .sourceApplication("bop-v1")
+            .allowedOperation(AllowedOperation.CHANGE)
+            .requestedOperation("POST")
+            .expectedResult(true));
+    ret.add(new TestCase("access token acquired from application refresh token accessing another apps resource.")
+            .permittedPath("/applications/{applicationidentifier}/permissions")
+            .requestedPath("/applications/bop-v1/permissions")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("identity-v1").forApplication("identity-v1")
+            .sourceApplication("bee-v1")
+            .allowedOperation(AllowedOperation.CHANGE)
+            .requestedOperation("POST")
+            .expectedResult(false));
+    ret.add(new TestCase("access token acquired from application refresh token accessing sub resource not allowed.")
+            .permittedPath("/applications/{applicationidentifier}/permissions")
+            .requestedPath("/applications/bop-v1/permissions/identity__v1__roles/users/Nebamun/enabled")
+            .acceptTokenIntendedForForeignApplication(false)
+            .calledApplication("identity-v1").forApplication("identity-v1")
+            .sourceApplication("bop-v1")
+            .allowedOperation(AllowedOperation.CHANGE)
+            .requestedOperation("PUT")
+            .expectedResult(false));
 
     return ret;
   }

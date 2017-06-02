@@ -109,6 +109,7 @@ public class SystemSecurityEnvironment {
   {
     return tenantAccessTokenSerializer.build(new TenantAccessTokenSerializer.Specification()
             .setUser(userName)
+            .setSourceApplication("test-v1")
             .setTokenContent(getTokenContentForStarEndpoint(applicationNames))
             .setSecondsToLive(TimeUnit.HOURS.toSeconds(10))
             .setKeyTimestamp(tenantKeyTimestamp())
@@ -124,6 +125,7 @@ public class SystemSecurityEnvironment {
             new TenantAccessTokenSerializer.Specification().setPrivateKey(tenantPrivateKey())
                     .setKeyTimestamp(tenantKeyTimestamp())
                     .setSecondsToLive(100)
+                    .setSourceApplication("test-v1")
                     .setUser(userName)
                     .setTokenContent(generateOnePermissionTokenContent(applicationName, uri, allowedOperation))
     ).getToken();
