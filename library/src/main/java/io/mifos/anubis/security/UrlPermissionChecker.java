@@ -64,8 +64,9 @@ public class UrlPermissionChecker implements AccessDecisionVoter<FilterInvocatio
             .filter(x -> x.matches(filterInvocation, applicationName, authentication.getPrincipal()))
             .findAny();
 
+    //Do not put full .getRequestUrl() into log info, because in the case of identity, it includes the password.
     matchedPermission.ifPresent(x -> logger.debug("Authorizing access to {} based on permission: {}"
-            , filterInvocation.getRequestUrl(),  x));
+            , filterInvocation.getRequest().getServletPath(),  x));
 
     return matchedPermission.map(x -> ACCESS_GRANTED).orElse(ACCESS_DENIED);
   }
