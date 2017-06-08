@@ -24,10 +24,12 @@ import java.util.Objects;
 public class AnubisPrincipal {
   private final String user;
   private final String forApplicationName;
+  private final String sourceApplicationName;
 
-  AnubisPrincipal(String user, String forApplicationName) {
+  AnubisPrincipal(String user, String forApplicationName, String sourceApplicationName) {
     this.user = user;
     this.forApplicationName = forApplicationName;
+    this.sourceApplicationName = sourceApplicationName;
   }
 
   public String getUser() {
@@ -36,6 +38,10 @@ public class AnubisPrincipal {
 
   public String getForApplicationName() {
     return forApplicationName;
+  }
+
+  public String getSourceApplicationName() {
+    return sourceApplicationName;
   }
 
   @Override

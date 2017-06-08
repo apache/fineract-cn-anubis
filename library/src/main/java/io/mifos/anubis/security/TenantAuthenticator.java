@@ -78,6 +78,7 @@ public class TenantAuthenticator {
       @SuppressWarnings("unchecked") Jwt<Header, Claims> jwt = parser.parse(token);
 
       final String serializedTokenContent = jwt.getBody().get(TokenConstants.JWT_CONTENT_CLAIM, String.class);
+      final String sourceApplication = jwt.getBody().get(TokenConstants.JWT_SOURCE_APPLICATION_CLAIM, String.class);
       final TokenContent tokenContent = gson.fromJson(serializedTokenContent, TokenContent.class);
       if (tokenContent == null)
         throw AmitAuthenticationException.missingTokenContent();
@@ -88,7 +89,7 @@ public class TenantAuthenticator {
       logger.info("Tenant token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
       return new AnubisAuthentication(TokenConstants.PREFIX + token,
-          jwt.getBody().getSubject(), applicationNameWithVersion, permissions
+          jwt.getBody().getSubject(), applicationNameWithVersion, sourceApplication, permissions
       );
     }
     catch (final JwtException e) {

@@ -59,8 +59,10 @@ public class PermissionSegmentMatcher {
       return true;
     else if (isUserIdentifierSegment())
       return requestSegment.equals(principal.getUser());
-    else if (isApplicationIdentifierSegment() && acceptTokenIntendedForForeignApplication)
+    else if (acceptTokenIntendedForForeignApplication && isApplicationIdentifierSegment())
       return requestSegment.equals(principal.getForApplicationName());
+    else if (!acceptTokenIntendedForForeignApplication && isApplicationIdentifierSegment())
+      return requestSegment.equals(principal.getSourceApplicationName());
     else if (isParameterSegment())
       return isSu;
     else

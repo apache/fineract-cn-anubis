@@ -78,7 +78,12 @@ public class SystemAuthenticator {
 
       logger.info("System token for user {}, with key timestamp {} authenticated successfully.", user, keyTimestamp);
 
-      return new AnubisAuthentication(TokenConstants.PREFIX + token, user, result.getBody().getAudience(), permissions);
+      return new AnubisAuthentication(
+              TokenConstants.PREFIX + token,
+              user,
+              result.getBody().getAudience(),
+              TokenType.SYSTEM.getIssuer(),
+              permissions);
     }
     catch (final JwtException e) {
       logger.debug("token = {}", token);
