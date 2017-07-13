@@ -64,7 +64,7 @@ public class TestPermittableEndpoints {
   @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
   @Qualifier(value = LOGGER_QUALIFIER)
-  Logger logger;
+  private Logger logger;
 
   private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
   private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();

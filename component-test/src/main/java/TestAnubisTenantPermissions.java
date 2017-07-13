@@ -84,10 +84,9 @@ public class TestAnubisTenantPermissions {
   @Rule
   public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
 
-
-  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
-  Example example;
+  private Example example;
 
   @Test
   public void readPermissionShouldWorkToRead()
