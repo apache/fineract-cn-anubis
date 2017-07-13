@@ -18,6 +18,7 @@ package io.mifos.anubis.test.v1;
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
@@ -85,7 +86,7 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
       throw new IllegalStateException("Initialize didn't complete.");
   }
 
-  public void initializeTenantInApplication()
+  public ApplicationSignatureSet initializeTenantInApplication()
   {
     final Anubis anubis = getAnubis();
 
@@ -96,8 +97,10 @@ public class TenantApplicationSecurityEnvironmentTestRule extends ExternalResour
         final String keyTimestamp = systemSecurityEnvironment.tenantKeyTimestamp();
         final RSAPublicKey publicKey = systemSecurityEnvironment.tenantPublicKey();
         final Signature identityManagerSignature = new Signature(publicKey.getModulus(), publicKey.getPublicExponent());
-        anubis.createSignatureSet(keyTimestamp, identityManagerSignature);
+        final ApplicationSignatureSet resultingSignatureSet
+            = anubis.createSignatureSet(keyTimestamp, identityManagerSignature);
         anubis.initializeResources();
+        return resultingSignatureSet;
       }}
   }
 

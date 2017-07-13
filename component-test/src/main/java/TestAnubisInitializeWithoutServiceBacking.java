@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.test.env.TestEnvironment;
 import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
 import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,8 +69,11 @@ public class TestAnubisInitializeWithoutServiceBacking {
     final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
             = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
 
+    final ApplicationSignatureSet applicationSignatureSet
+        = tenantApplicationSecurityEnvironment.initializeTenantInApplication();
     for (int i = 0; i < 50; i++ ) {
-      tenantApplicationSecurityEnvironment.initializeTenantInApplication();
+      final ApplicationSignatureSet x = tenantApplicationSecurityEnvironment.initializeTenantInApplication();
+      Assert.assertEquals(applicationSignatureSet, x);
     }
   }
 }
