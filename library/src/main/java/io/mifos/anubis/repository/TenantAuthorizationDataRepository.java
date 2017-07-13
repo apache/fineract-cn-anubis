@@ -50,8 +50,26 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
+ * This repository saves identity manager public keys and application private keys for use in authentication
+ * of tokens. The data is saved in a separate cassandra table for each service. Keys are timestamped so that
+ * they can be rotated without stopping the services.
+ *
+ * Operations which change the key data are synchronized for several reasons:
+ *
+ * <ul>
+ * <li> Multiple parallel calls to create a signature can cause one signature to be saved for an application, but
+ * a different one to have been returned for the same application, which in turn can lead to authentication
+ * failures in isis.</li>
+ * <li>Multiple parallel calls to create a table in cassandra can lead to
+ * an exception of the form "org.apache.cassandra.exceptions.ConfigurationException: Column family ID mismatch"
+ * However, synchronizing this will only work within the context of one service and is inadequate if multiple
+ * services are running. More protection against multiple calls to initialize are still needed and should be
+ * implemented within the provisioner.</li>
+ * </ul>
+ *
  * @author Myrle Krantz
  */
+//
 @Component
 public class TenantAuthorizationDataRepository implements TenantSignatureRepository {
   private static final String AUTHORIZATION_TABLE_SUFFIX = "_authorization_v1_data";
@@ -96,9 +114,23 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
    * @return The signature containing the public keys of the application.  This is *not* the signature passed in
    * for the identity manager.
    */
-  public Signature createSignatureSet(final String timestamp, final Signature identityManagerSignature) {
+  public synchronized Signature createSignatureSet(final String timestamp, final Signature identityManagerSignature) {
     Assert.notNull(timestamp);
     Assert.notNull(identityManagerSignature);
+
+    // getSignatureSet (below) queries the table, so make sure it's created first.
+    final Session session = cassandraSessionProvider.getTenantSession();
+    createTable(session);
+
+    // if there is already a signature set for the identity manager then return it rather than create a new one.
+    // Having multiple signature sets floating around for the same application, can cause problems because the
+    // application may sign it's tokens with one signature, only to have identity check those tokens with a different
+    // signature.
+    final Optional<ApplicationSignatureSet> signatureSet = getSignatureSet(timestamp);
+    if (signatureSet.isPresent() &&
+        signatureSet.map(x -> x.getIdentityManagerSignature().equals(identityManagerSignature)).orElse(false))
+      return signatureSet.get().getApplicationSignature();
+
 
     //TODO: add validation to make sure this timestamp is more recent than any already stored.
     logger.info("Creating application signature set for timestamp '" + timestamp +
@@ -106,9 +138,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
 
     final RsaKeyPairFactory.KeyPairHolder applicationSignature = RsaKeyPairFactory.createKeyPair();
 
-    final Session session = cassandraSessionProvider.getTenantSession();
 
-    createTable(session);
     createEntry(session,
             timestamp,
             identityManagerSignature.getPublicKeyMod(),
@@ -121,7 +151,7 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     return new Signature(applicationSignature.getPublicKeyMod(), applicationSignature.getPublicKeyExp());
   }
 
-  public void deleteSignatureSet(final String timestamp) {
+  public synchronized void deleteSignatureSet(final String timestamp) {
     Assert.notNull(timestamp);
     //Don't actually delete, just invalidate, so that if someone starts coming at me with an older keyset, I'll
     //know what's happening.
