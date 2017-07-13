@@ -77,14 +77,14 @@ public class TestAnubisInitialize {
   @ClassRule
   public static CassandraInitializer cassandraInitializer = new CassandraInitializer();
 
-  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
-  Example example;
+  private Example example;
 
   @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
   @Qualifier(value = LOGGER_QUALIFIER)
-  Logger logger;
+  private Logger logger;
 
   @Test
   public void testBrokenToken()
@@ -108,7 +108,7 @@ public class TestAnubisInitialize {
           anubis.createSignatureSet(keyTimestamp, signature);
         }
 
-        Assert.assertFalse("A call with a broken token should result in an exception thrown.", true);
+        Assert.fail("A call with a broken token should result in an exception thrown.");
       } catch (final InvalidTokenException e) {
         Assert.assertFalse("Service init code should not have been reached with a broken token.",
                 example.initialized());

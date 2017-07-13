@@ -79,13 +79,13 @@ public class TestSystemToken {
   public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
           = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
 
-  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
-  protected MetricsFeignClient metricsFeignClient;
+  private MetricsFeignClient metricsFeignClient;
 
-  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiredMembersInspection"})
+  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
   @Autowired
-  Example example;
+  private Example example;
 
 
   @Test
