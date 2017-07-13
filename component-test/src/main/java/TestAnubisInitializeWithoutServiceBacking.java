@@ -66,8 +66,9 @@ public class TestAnubisInitializeWithoutServiceBacking {
   {
     final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
             = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
-    tenantApplicationSecurityEnvironment.initializeTenantInApplication();
-    tenantApplicationSecurityEnvironment.initializeTenantInApplication();
-    tenantApplicationSecurityEnvironment.initializeTenantInApplication();
+
+    for (int i = 0; i < 50; i++ ) {
+      tenantApplicationSecurityEnvironment.initializeTenantInApplication();
+    }
   }
 }

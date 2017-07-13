@@ -136,7 +136,12 @@ public class TenantAuthorizationDataRepository implements TenantSignatureReposit
     return getRow(timestamp).map(TenantAuthorizationDataRepository::mapRowToApplicationSignature);
   }
 
-  private void createTable(final @Nonnull Session tenantSession) {
+  // synchronized, because multiple parallel calls to create table on cassandra can lead to
+  // an exception of the form "org.apache.cassandra.exceptions.ConfigurationException: Column family ID mismatch"
+  // However, synchronizing this will only work within the context of one service and is inadequate if multiple
+  // services are running. More protection against multiple calls to initialize are still needed and should be
+  // implemented within the provisioner.
+  private synchronized void createTable(final @Nonnull Session tenantSession) {
 
     final String createTenantsTable = SchemaBuilder
             .createTable(tableName)
