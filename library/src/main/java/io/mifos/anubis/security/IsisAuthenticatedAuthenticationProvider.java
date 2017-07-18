@@ -22,7 +22,9 @@ import io.mifos.anubis.provider.SystemRsaKeyProvider;
 import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.token.TokenType;
 
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -33,6 +35,8 @@ import org.springframework.util.Assert;
 import javax.annotation.Nonnull;
 import java.security.Key;
 import java.util.Optional;
+
+import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
 
 
 /**
@@ -45,6 +49,7 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
   private final SystemAuthenticator systemAuthenticator;
   private final TenantAuthenticator tenantAuthenticator;
   private final GuestAuthenticator guestAuthenticator;
+  private final Logger logger;
 
   @Autowired
   public IsisAuthenticatedAuthenticationProvider(
@@ -52,12 +57,14 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
       final TenantRsaKeyProvider tenantRsaKeyProvider,
       final SystemAuthenticator systemAuthenticator,
       final TenantAuthenticator tenantAuthenticator,
-      final GuestAuthenticator guestAuthenticator) {
+      final GuestAuthenticator guestAuthenticator,
+      final @Qualifier(LOGGER_NAME) Logger logger) {
     this.systemRsaKeyProvider = systemRsaKeyProvider;
     this.tenantRsaKeyProvider = tenantRsaKeyProvider;
     this.systemAuthenticator = systemAuthenticator;
     this.tenantAuthenticator = tenantAuthenticator;
     this.guestAuthenticator = guestAuthenticator;
+    this.logger = logger;
   }
 
   @Override public boolean supports(final Class<?> clazz) {
@@ -91,6 +98,7 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
         case SYSTEM:
           return systemAuthenticator.authenticate(user, x, tokenInfo.getKeyTimestamp());
         default:
+          logger.debug("Authentication failed for a token with a token type other than tenant or system.");
           throw AmitAuthenticationException.invalidTokenIssuer(tokenInfo.getType().getIssuer());
       }
     }).orElseGet(() -> guestAuthenticator.authenticate(user));
@@ -103,6 +111,7 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
     }
 
     if (!authenticationHeader.startsWith(TokenConstants.PREFIX)) {
+      logger.debug("Authentication failed for a token which does not begin with the token prefix.");
       throw AmitAuthenticationException.invalidHeader();
     }
     return Optional.of(authenticationHeader.substring(TokenConstants.PREFIX.length()).trim());
@@ -124,15 +133,18 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
               case SYSTEM:
                 return systemRsaKeyProvider.getPublicKey(keyTimestamp);
               default:
+                logger.debug("Authentication failed in token type discovery for a token with a token type other than tenant or system.");
                 throw AmitAuthenticationException.invalidTokenIssuer(tokenType.getIssuer());
             }
           }
           catch (final IllegalArgumentException e)
           {
+            logger.debug("Authentication failed because no tenant was provided.");
             throw AmitAuthenticationException.missingTenant();
           }
           catch (final InvalidKeyTimestampException e)
           {
+            logger.debug("Authentication failed because the provided key timestamp is invalid.");
             throw AmitAuthenticationException.invalidTokenKeyTimestamp(tokenType.getIssuer(), keyTimestamp);
           }
         }
@@ -145,6 +157,7 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
       final String alg = jwt.getHeader().get("alg").toString();
       final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.forName(alg);
       if (!signatureAlgorithm.isRsa()) {
+        logger.debug("Authentication failed because the token is signed with an algorithm other than RSA.");
         throw AmitAuthenticationException.invalidTokenAlgorithm(alg);
       }
 
@@ -155,6 +168,7 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
     }
     catch (final JwtException e)
     {
+      logger.debug("Authentication failed because token parsing failed.");
       throw AmitAuthenticationException.invalidToken();
     }
   }
@@ -166,8 +180,10 @@ public class IsisAuthenticatedAuthenticationProvider implements AuthenticationPr
   private @Nonnull TokenType getTokenTypeFromClaims(final Claims claims) {
     final String issuer = claims.getIssuer();
     final Optional<TokenType> tokenType = TokenType.valueOfIssuer(issuer);
-    if (!tokenType.isPresent())
+    if (!tokenType.isPresent()) {
+      logger.debug("Authentication failed for a token with a missing or invalid token type.");
       throw AmitAuthenticationException.invalidTokenIssuer(issuer);
+    }
     return tokenType.get();
   }
 }
