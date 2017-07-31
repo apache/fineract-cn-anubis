@@ -17,9 +17,8 @@ package io.mifos.anubis;
 
 import io.mifos.anubis.example.simple.Example;
 import io.mifos.anubis.example.simple.ExampleConfiguration;
+import io.mifos.anubis.suites.SuiteTestEnvironment;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
-import io.mifos.anubis.suites.SuiteTestEnvironment;
 
 /**
  * @author Myrle Krantz
@@ -67,9 +65,6 @@ public class AbstractSimpleTest extends SuiteTestEnvironment {
   @Autowired
   @Qualifier(value = LOGGER_QUALIFIER)
   Logger logger;
-
-  @ClassRule
-  public final static TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
 
   @Rule
   public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment

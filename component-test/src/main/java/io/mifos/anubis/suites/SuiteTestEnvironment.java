@@ -16,6 +16,7 @@
 package io.mifos.anubis.suites;
 
 import io.mifos.core.test.env.TestEnvironment;
+import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
 import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.ClassRule;
 import org.junit.rules.RuleChain;
@@ -28,11 +29,13 @@ import org.junit.rules.TestRule;
 public class SuiteTestEnvironment {
   public static final String APP_NAME = "anubis-v1";
 
-  static protected TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
-  static protected CassandraInitializer cassandraInitializer = new CassandraInitializer();
+  protected final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
+  protected final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
+  private final static TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
 
   @ClassRule
   public static TestRule orderClassRules = RuleChain
       .outerRule(new RunExternalResourceOnce(testEnvironment))
-      .around(new RunExternalResourceOnce(cassandraInitializer));
+      .around(new RunExternalResourceOnce(cassandraInitializer))
+      .around(tenantDataStoreContext);
 }

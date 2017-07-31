@@ -65,7 +65,4 @@ public class AbstractNoKeyStorageTest extends SuiteTestEnvironment {
   @Autowired
   @Qualifier(value = LOGGER_QUALIFIER)
   Logger logger;
-
-  @Rule
-  public final TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
 }

@@ -15,10 +15,9 @@
  */
 package io.mifos.anubis;
 
-import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
 import io.mifos.anubis.example.noinitialize.Example;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import org.junit.Rule;
+import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
+import io.mifos.anubis.suites.SuiteTestEnvironment;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
-import io.mifos.anubis.suites.SuiteTestEnvironment;
 
 /**
  * @author Myrle Krantz
@@ -64,7 +62,4 @@ public class AbstractNoInitializeTest extends SuiteTestEnvironment {
   @Autowired
   @Qualifier(value = LOGGER_QUALIFIER)
   Logger logger;
-
-  @Rule
-  public final TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
 }
