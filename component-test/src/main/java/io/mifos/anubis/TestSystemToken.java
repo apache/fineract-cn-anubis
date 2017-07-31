@@ -13,83 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import io.mifos.anubis.example.simple.Example;
-import io.mifos.anubis.example.simple.ExampleConfiguration;
+package io.mifos.anubis;
+
 import io.mifos.anubis.example.simple.Metrics;
 import io.mifos.anubis.example.simple.MetricsFeignClient;
 import io.mifos.anubis.test.v1.SystemSecurityEnvironment;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
+import io.mifos.core.api.context.AutoGuest;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.api.util.NotFoundException;
-import io.mifos.core.test.env.TestEnvironment;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.netflix.ribbon.RibbonClient;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author Myrle Krantz
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestSystemToken {
-  private static final String APP_NAME = "anubis-v1";
-
-  @Configuration
-  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.simple"})
-  @RibbonClient(name = APP_NAME)
-  @Import({ExampleConfiguration.class})
-  static public class TestConfiguration {
-    public TestConfiguration() {
-      super();
-    }
-
-    @Bean()
-    public Logger logger() {
-      return LoggerFactory.getLogger("system-token-logger");
-    }
-  }
-
-  private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
-  private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
-  private final static TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
-
-  @ClassRule
-  public static TestRule orderClassRules = RuleChain
-          .outerRule(testEnvironment)
-          .around(cassandraInitializer)
-          .around(tenantDataStoreContext);
-
-  @Rule
-  public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
-          = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
-
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
+public class TestSystemToken extends AbstractSimpleTest {
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection"})
   @Autowired
   private MetricsFeignClient metricsFeignClient;
 
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
-  @Autowired
-  private Example example;
-
-
   @Test
-  public void shouldBeAbleToGetContactSpringEndpoint() throws Exception {
+  public void shouldNotBeAbleToContactSpringEndpointWithGuestTokenWhenNotSoConfigured() throws Exception {
+    try (final AutoUserContext ignored = new AutoGuest()) {
+      metricsFeignClient.getMetrics();
+      Assert.fail("Should not be able to get metrics with guest token unless system is so configured.");
+    }
+    catch (final NotFoundException ignore) { }
+
     try (final AutoUserContext ignored = tenantApplicationSecurityEnvironment.createAutoSeshatContext()) {
       final Metrics metrics = metricsFeignClient.getMetrics();
       Assert.assertTrue(metrics.getThreads() > 0);

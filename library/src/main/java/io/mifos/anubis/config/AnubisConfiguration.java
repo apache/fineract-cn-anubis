@@ -21,6 +21,7 @@ import io.mifos.core.cassandra.config.EnableCassandra;
 import io.mifos.core.lang.config.EnableApplicationName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,6 +33,7 @@ import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
 @Configuration
 @EnableApplicationName
 @EnableCassandra
+@EnableConfigurationProperties(AnubisProperties.class)
 public class AnubisConfiguration {
 
   @Bean(name = LOGGER_NAME)

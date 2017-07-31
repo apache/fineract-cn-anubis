@@ -20,9 +20,12 @@ import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.annotation.Permittable;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.PermittableEndpoint;
+import io.mifos.anubis.config.AnubisProperties;
 import io.mifos.anubis.security.ApplicationPermission;
 import io.mifos.core.lang.ApplicationName;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.endpoint.mvc.EndpointHandlerMapping;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
@@ -38,6 +41,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mifos.anubis.config.AnubisConstants.LOGGER_NAME;
+
 /**
  * @author Myrle Krantz
  */
@@ -46,14 +51,25 @@ public class PermittableService {
   private final RequestMappingHandlerMapping requestMappingHandlerMapping;
   private final EndpointHandlerMapping endpointHandlerMapping;
   private final ApplicationName applicationName;
+  private final Permittable defaultPermittable;
 
   @Autowired
   public PermittableService(final RequestMappingHandlerMapping requestMappingHandlerMapping,
                             final EndpointHandlerMapping endpointHandlerMapping,
-                            final ApplicationName applicationName) {
+                            final ApplicationName applicationName,
+                            final AnubisProperties anubisProperties,
+                            final @Qualifier(LOGGER_NAME) Logger logger) {
     this.requestMappingHandlerMapping = requestMappingHandlerMapping;
     this.endpointHandlerMapping = endpointHandlerMapping;
     this.applicationName = applicationName;
+    if (anubisProperties.getAcceptGuestTokensForSystemEndpoints()) {
+      logger.error("The service property anubis.tokenTypeRequiredForSystemEndpoints is set to GUEST. This " +
+          "feature is intended for use only in test environments. Turning it on in a production environment " +
+          "could be a serious security vulnerability.");
+      this.defaultPermittable = guestPermittable();}
+    else {
+      this.defaultPermittable = systemPermittable();
+    }
   }
 
   public Set<ApplicationPermission> getPermittableEndpointsAsPermissions(
@@ -136,24 +152,23 @@ public class PermittableService {
       final Map<RequestMappingInfo, HandlerMethod> handlerMethods,
       final @Nonnull Set<PermittableEndpoint> permittableEndpoints) {
     handlerMethods.entrySet()
-        .stream().flatMap(PermittableService::whatINeedToBuildAPermittableEndpoint)
+        .stream().flatMap(handlerMethod -> PermittableService.whatINeedToBuildAPermittableEndpoint(handlerMethod, defaultPermittable))
         .filter(whatINeedToBuildAPermittableEndpoint -> acceptedTokenTypes.contains(getAcceptedTokenType(whatINeedToBuildAPermittableEndpoint)))
         .forEachOrdered(whatINeedToBuildAPermittableEndpoint ->
-             whatINeedToBuildAPermittableEndpoint.patterns.stream()
-            .forEachOrdered(pattern -> whatINeedToBuildAPermittableEndpoint.methods
-                .stream()
-                .forEachOrdered(method -> {
-                  final PermittableEndpoint permittableEndpoint = new PermittableEndpoint();
-                  permittableEndpoint.setPath(getPath(
+            whatINeedToBuildAPermittableEndpoint.patterns
+                .forEach(pattern -> whatINeedToBuildAPermittableEndpoint.methods
+                    .forEach(method -> {
+                      final PermittableEndpoint permittableEndpoint = new PermittableEndpoint();
+                      permittableEndpoint.setPath(getPath(
                           withAppName ? applicationName.toString() : "",
                           pattern,
                           whatINeedToBuildAPermittableEndpoint));
-                  permittableEndpoint.setMethod(method.name());
-                  permittableEndpoint.setGroupId(whatINeedToBuildAPermittableEndpoint.annotation.groupId());
-                  permittableEndpoint.setAcceptTokenIntendedForForeignApplication(whatINeedToBuildAPermittableEndpoint.annotation.acceptTokenIntendedForForeignApplication());
-                  permittableEndpoints.add(permittableEndpoint);
-                })
-            ));
+                      permittableEndpoint.setMethod(method.name());
+                      permittableEndpoint.setGroupId(whatINeedToBuildAPermittableEndpoint.annotation.groupId());
+                      permittableEndpoint.setAcceptTokenIntendedForForeignApplication(whatINeedToBuildAPermittableEndpoint.annotation.acceptTokenIntendedForForeignApplication());
+                      permittableEndpoints.add(permittableEndpoint);
+                    })
+                ));
   }
 
   static private AcceptedTokenType getAcceptedTokenType(final @Nonnull WhatINeedToBuildAPermittableEndpoint whatINeedToBuildAPermittableEndpoint) {
@@ -178,24 +193,56 @@ public class PermittableService {
   }
 
   static private Stream<WhatINeedToBuildAPermittableEndpoint> whatINeedToBuildAPermittableEndpoint(
-          final Map.Entry<RequestMappingInfo, HandlerMethod> handlerMethod) {
-    final Set<Permittable> annotations = getPermittableAnnotations(handlerMethod);
+          final Map.Entry<RequestMappingInfo, HandlerMethod> handlerMethod,
+          final Permittable defaultPermittable) {
+    final Set<Permittable> annotations = getPermittableAnnotations(handlerMethod, defaultPermittable);
     final Set<String> patterns = handlerMethod.getKey().getPatternsCondition().getPatterns();
     final Set<RequestMethod> methods = handlerMethod.getKey().getMethodsCondition().getMethods();
     return annotations.stream()
             .map(annotation -> new WhatINeedToBuildAPermittableEndpoint(annotation, patterns, methods));
   }
 
-  static private Set<Permittable> getPermittableAnnotations(Map.Entry<RequestMappingInfo, HandlerMethod> handlerMethod) {
+  static private Set<Permittable> getPermittableAnnotations(
+      final Map.Entry<RequestMappingInfo, HandlerMethod> handlerMethod,
+      final Permittable defaultPermittable) {
     final Method method = handlerMethod.getValue().getMethod();
     final Set<Permittable> ret = AnnotationUtils.getRepeatableAnnotations(method, Permittable.class);
     if (ret.isEmpty())
-      return Collections.singleton(defaultPermittable());
+      return Collections.singleton(defaultPermittable);
     else
       return ret;
   }
 
-  static private Permittable defaultPermittable() {
+  static private Permittable guestPermittable() {
+    return new Permittable() {
+      @Override
+      public Class<? extends Annotation> annotationType() {
+        return Permittable.class;
+      }
+
+      @Override
+      public AcceptedTokenType value() {
+        return AcceptedTokenType.GUEST;
+      }
+
+      @Override
+      public String groupId() {
+        return "";
+      }
+
+      @Override
+      public String permittedEndpoint() {
+        return "";
+      }
+
+      @Override
+      public boolean acceptTokenIntendedForForeignApplication() {
+        return false;
+      }
+    };
+  }
+
+  static private Permittable systemPermittable() {
     return new Permittable() {
       @Override
       public Class<? extends Annotation> annotationType() {
