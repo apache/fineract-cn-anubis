@@ -15,10 +15,10 @@
  */
 package io.mifos.anubis;
 
-import io.mifos.anubis.example.nokeystorage.ExampleConfiguration;
 import io.mifos.anubis.example.nokeystorage.Example;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import org.junit.Rule;
+import io.mifos.anubis.example.nokeystorage.ExampleConfiguration;
+import io.mifos.anubis.example.simple.MetricsFeignClient;
+import io.mifos.anubis.suites.SuiteTestEnvironment;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,19 +31,25 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
-import io.mifos.anubis.suites.SuiteTestEnvironment;
 
 /**
  * @author Myrle Krantz
+ *
+ * Adding the property anubis.acceptGuestTokensForSystemEndpoints=true to this is a bit of a hack,
+ * that saves me from creating an entire test suite for just this one property.  See
+ * TestAnubisInitializeWithSpecialTenantSignatureRepository.shouldBeAbleToContactSpringEndpointWithGuestTokenWhenSoConfigured
+ * for its use.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-    classes = AbstractNoKeyStorageTest.TestConfiguration.class)
+    classes = AbstractNoKeyStorageTest.TestConfiguration.class,
+    properties = {"anubis.acceptGuestTokensForSystemEndpoints=true"})
+
 public class AbstractNoKeyStorageTest extends SuiteTestEnvironment {
   private static final String LOGGER_QUALIFIER = "test-logger";
 
   @Configuration
-  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.nokeystorage"})
+  @EnableFeignClients(clients = {io.mifos.anubis.example.nokeystorage.Example.class, MetricsFeignClient.class})
   @RibbonClient(name = APP_NAME)
   @Import({ExampleConfiguration.class})
   static public class TestConfiguration {

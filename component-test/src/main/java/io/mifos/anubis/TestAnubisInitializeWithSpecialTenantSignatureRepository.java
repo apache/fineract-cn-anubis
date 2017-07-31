@@ -15,16 +15,26 @@
  */
 package io.mifos.anubis;
 
+import io.mifos.anubis.example.simple.Metrics;
+import io.mifos.anubis.example.simple.MetricsFeignClient;
 import io.mifos.anubis.test.v1.SystemSecurityEnvironment;
+import io.mifos.core.api.context.AutoGuest;
 import io.mifos.core.api.context.AutoSeshat;
+import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.lang.AutoTenantContext;
 import io.mifos.core.lang.TenantContextHolder;
+import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author Myrle Krantz
  */
 public class TestAnubisInitializeWithSpecialTenantSignatureRepository extends AbstractNoKeyStorageTest {
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection"})
+  @Autowired
+  private MetricsFeignClient metricsFeignClient;
+
   @Test
   public void test()
   {
@@ -39,5 +49,13 @@ public class TestAnubisInitializeWithSpecialTenantSignatureRepository extends Ab
       try (final AutoSeshat ignored2 = new AutoSeshat(systemToken)) {
         example.initialize();
       }}
+  }
+
+  @Test
+  public void shouldBeAbleToContactSpringEndpointWithGuestTokenWhenSoConfigured() throws Exception {
+    try (final AutoUserContext ignored = new AutoGuest()) {
+      final Metrics metrics = metricsFeignClient.getMetrics();
+      Assert.assertTrue(metrics.getThreads() > 0);
+    }
   }
 }

@@ -19,6 +19,7 @@ import io.mifos.anubis.example.simple.Metrics;
 import io.mifos.anubis.example.simple.MetricsFeignClient;
 import io.mifos.anubis.test.v1.SystemSecurityEnvironment;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
+import io.mifos.core.api.context.AutoGuest;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.api.util.NotFoundException;
 import org.junit.Assert;
@@ -33,9 +34,14 @@ public class TestSystemToken extends AbstractSimpleTest {
   @Autowired
   private MetricsFeignClient metricsFeignClient;
 
-
   @Test
-  public void shouldBeAbleToGetContactSpringEndpoint() throws Exception {
+  public void shouldNotBeAbleToContactSpringEndpointWithGuestTokenWhenNotSoConfigured() throws Exception {
+    try (final AutoUserContext ignored = new AutoGuest()) {
+      metricsFeignClient.getMetrics();
+      Assert.fail("Should not be able to get metrics with guest token unless system is so configured.");
+    }
+    catch (final NotFoundException ignore) { }
+
     try (final AutoUserContext ignored = tenantApplicationSecurityEnvironment.createAutoSeshatContext()) {
       final Metrics metrics = metricsFeignClient.getMetrics();
       Assert.assertTrue(metrics.getThreads() > 0);
