@@ -13,79 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.mifos.anubis;
+
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.anubis.example.simple.Example;
-import io.mifos.anubis.example.simple.ExampleConfiguration;
-import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.util.NotFoundException;
 import io.mifos.core.lang.security.RsaKeyPairFactory;
-import io.mifos.core.test.env.TestEnvironment;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.netflix.ribbon.RibbonClient;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 
 /**
  * @author Myrle Krantz
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestAnubisKeyRotation {
-  private static final String APP_NAME = "anubis-v1";
-
-  @Configuration
-  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.simple"})
-  @RibbonClient(name = APP_NAME)
-  @Import({ExampleConfiguration.class})
-  static public class TestConfiguration {
-    public TestConfiguration() {
-      super();
-    }
-
-    @Bean()
-    public Logger logger() {
-      return LoggerFactory.getLogger("key-rotation-test-logger");
-    }
-  }
-
-  private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
-  private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
-  private final static TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
-
-  @ClassRule
-  public static TestRule orderClassRules = RuleChain
-          .outerRule(testEnvironment)
-          .around(cassandraInitializer)
-          .around(tenantDataStoreContext);
-
-  @Rule
-  public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
-          = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
-
-  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection", "SpringJavaAutowiredMembersInspection"})
-  @Autowired
-  protected Example example;
-
+public class TestAnubisKeyRotation extends AbstractSimpleTest {
   @Test
   public void testKeyRotation()
   {

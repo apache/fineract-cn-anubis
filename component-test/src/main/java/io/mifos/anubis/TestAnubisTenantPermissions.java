@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.mifos.anubis;
 
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
-import io.mifos.anubis.example.noinitialize.Example;
-import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
 import io.mifos.anubis.example.noinitialize.UserContext;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.api.context.AutoSeshat;
@@ -25,68 +24,20 @@ import io.mifos.core.api.util.InvalidTokenException;
 import io.mifos.core.api.util.NotFoundException;
 import io.mifos.core.lang.AutoTenantContext;
 import io.mifos.core.test.env.TestEnvironment;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.Assert;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.netflix.ribbon.RibbonClient;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author Myrle Krantz
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestAnubisTenantPermissions {
-  private static final String APP_NAME = "anubis-v1";
+public class TestAnubisTenantPermissions extends AbstractNoInitializeTest {
   private static final String DUMMY_URI = "/dummy";
   private static final String DESIGNATOR_URI = "/parameterized/{useridentifier}/with/*/parameters";
   private static final String USER_NAME = "Meryre";
 
-  @Configuration
-  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.noinitialize"})
-  @RibbonClient(name = APP_NAME)
-  @Import({ExampleConfiguration.class})
-  static public class TestConfiguration {
-    public TestConfiguration() {
-      super();
-    }
-
-    @Bean()
-    public Logger logger() {
-      return LoggerFactory.getLogger(APP_NAME + "-logger");
-    }
-  }
-
-  private final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
-  private final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
-  private final static TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
-
-  @ClassRule
-  public static TestRule orderClassRules = RuleChain
-          .outerRule(testEnvironment)
-          .around(cassandraInitializer)
-          .around(tenantDataStoreContext);
-
   @Rule
   public final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
-
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
-  @Autowired
-  private Example example;
 
   @Test
   public void readPermissionShouldWorkToRead()

@@ -13,78 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.mifos.anubis;
 
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.anubis.example.simple.Example;
-import io.mifos.anubis.example.simple.ExampleConfiguration;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
 import io.mifos.core.api.context.AutoSeshat;
 import io.mifos.core.api.context.AutoUserContext;
 import io.mifos.core.api.util.InvalidTokenException;
 import io.mifos.core.api.util.NotFoundException;
 import io.mifos.core.lang.AutoTenantContext;
-import io.mifos.core.test.env.TestEnvironment;
 import io.mifos.core.test.fixture.TenantDataStoreTestContext;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
 import org.junit.Assert;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
-import org.springframework.cloud.netflix.ribbon.RibbonClient;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.security.interfaces.RSAPublicKey;
 
 /**
  * @author Myrle Krantz
  */
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestAnubisInitialize {
-  private static final String APP_NAME = "anubis-v1";
-  private static final String LOGGER_QUALIFIER = "test-logger";
-
-  @Configuration
-  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.simple"})
-  @RibbonClient(name = APP_NAME)
-  @Import({ExampleConfiguration.class})
-  public static class TestConfiguration {
-    public TestConfiguration() {
-      super();
-    }
-
-    @Bean(name = LOGGER_QUALIFIER)
-    public Logger logger() {
-      return LoggerFactory.getLogger(APP_NAME + "-logger");
-    }
-  }
-
-  @ClassRule
-  public static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
-
-  @ClassRule
-  public static CassandraInitializer cassandraInitializer = new CassandraInitializer();
-
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
-  @Autowired
-  private Example example;
-
-  @SuppressWarnings("SpringAutowiredFieldsWarningInspection")
-  @Autowired
-  @Qualifier(value = LOGGER_QUALIFIER)
-  private Logger logger;
+public class TestAnubisInitialize extends AbstractSimpleTest {
 
   @Test
   public void testBrokenToken()

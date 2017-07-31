@@ -13,67 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.mifos.anubis;
 
-import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
-import io.mifos.anubis.example.noinitialize.ExampleConfiguration;
-import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
-import io.mifos.core.test.env.TestEnvironment;
+import io.mifos.anubis.example.nokeystorage.ExampleConfiguration;
+import io.mifos.anubis.example.nokeystorage.Example;
 import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
-import org.junit.Assert;
-import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
+import org.springframework.cloud.netflix.ribbon.RibbonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
+import io.mifos.anubis.suites.SuiteTestEnvironment;
 
 /**
  * @author Myrle Krantz
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class TestAnubisInitializeWithoutServiceBacking {
-  private static final String APP_NAME = "anubis-v1";
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+    classes = AbstractNoKeyStorageTest.TestConfiguration.class)
+public class AbstractNoKeyStorageTest extends SuiteTestEnvironment {
+  private static final String LOGGER_QUALIFIER = "test-logger";
 
   @Configuration
+  @EnableFeignClients(basePackages = {"io.mifos.anubis.example.nokeystorage"})
+  @RibbonClient(name = APP_NAME)
   @Import({ExampleConfiguration.class})
   static public class TestConfiguration {
     public TestConfiguration() {
       super();
     }
 
-    @Bean()
+    @Bean(name = LOGGER_QUALIFIER)
     public Logger logger() {
-      return LoggerFactory.getLogger("initialize-without-rest-definition-test-logger");
+      return LoggerFactory.getLogger(APP_NAME + "-logger");
     }
   }
 
-  @ClassRule
-  public final static TestEnvironment testEnvironment = new TestEnvironment(APP_NAME);
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection"})
+  @Autowired
+  Example example;
 
-  @ClassRule
-  public final static CassandraInitializer cassandraInitializer = new CassandraInitializer();
+  @SuppressWarnings({"SpringAutowiredFieldsWarningInspection", "SpringJavaAutowiringInspection"})
+  @Autowired
+  @Qualifier(value = LOGGER_QUALIFIER)
+  Logger logger;
 
   @Rule
   public final TenantDataStoreContextTestRule tenantDataStoreContext = TenantDataStoreContextTestRule.forRandomTenantName(cassandraInitializer);
-
-  @Test
-  public void test()
-  {
-    final TenantApplicationSecurityEnvironmentTestRule tenantApplicationSecurityEnvironment
-            = new TenantApplicationSecurityEnvironmentTestRule(testEnvironment);
-
-    final ApplicationSignatureSet applicationSignatureSet
-        = tenantApplicationSecurityEnvironment.initializeTenantInApplication();
-    for (int i = 0; i < 50; i++ ) {
-      final ApplicationSignatureSet x = tenantApplicationSecurityEnvironment.initializeTenantInApplication();
-      Assert.assertEquals(applicationSignatureSet, x);
-    }
-  }
 }
