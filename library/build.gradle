@@ -29,10 +29,10 @@ dependencies {
             [group: 'org.springframework.cloud', name: 'spring-cloud-starter-security'],
             [group: 'org.hibernate', name: 'hibernate-validator', version: versions.hibernatevalidator],
             [group: 'io.jsonwebtoken', name: 'jjwt', version: versions.jjwt],
-            [group: 'io.mifos.core', name: 'lang', version: versions.frameworklang],
-            [group: 'io.mifos.core', name: 'api', version: versions.frameworkapi],
-            [group: 'io.mifos.core', name: 'cassandra', version: versions.frameworkcassandra],
-            [group: 'io.mifos.anubis', name: 'api', version: rootProject.version],
+            [group: 'org.apache.fineract.cn', name: 'lang', version: versions.frameworklang],
+            [group: 'org.apache.fineract.cn', name: 'api', version: versions.frameworkapi],
+            [group: 'org.apache.fineract.cn', name: 'cassandra', version: versions.frameworkcassandra],
+            [group: 'org.apache.fineract.cn.anubis', name: 'api', version: rootProject.version],
 
     )
 }

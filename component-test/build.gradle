@@ -25,10 +25,10 @@ dependencies {
             [group: 'org.springframework.boot', name: 'spring-boot-starter-test'],
             [group: 'com.google.code.gson', name: 'gson'],
             [group: 'io.jsonwebtoken', name: 'jjwt', version: versions.jjwt],
-            [group: 'io.mifos.core', name: 'api', version: versions.frameworkapi],
-            [group: 'io.mifos.core', name: 'test', version: versions.frameworktest],
-            [group: 'io.mifos.anubis', name: 'library', version: rootProject.version],
-            [group: 'io.mifos.anubis', name: 'api', version: rootProject.version],
-            [group: 'io.mifos.anubis', name: 'test', version: rootProject.version]
+            [group: 'org.apache.fineract.cn', name: 'api', version: versions.frameworkapi],
+            [group: 'org.apache.fineract.cn', name: 'test', version: versions.frameworktest],
+            [group: 'org.apache.fineract.cn.anubis', name: 'library', version: rootProject.version],
+            [group: 'org.apache.fineract.cn.anubis', name: 'api', version: rootProject.version],
+            [group: 'org.apache.fineract.cn.anubis', name: 'test', version: rootProject.version]
     )
 }
