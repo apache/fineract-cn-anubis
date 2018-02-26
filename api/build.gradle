@@ -23,11 +23,11 @@ dependencies {
             [group: 'org.springframework.cloud', name: 'spring-cloud-starter-feign'],
             [group: 'org.hibernate', name: 'hibernate-validator', version: versions.hibernatevalidator],
             [group: 'com.google.code.gson', name: 'gson'],
-            [group: 'io.mifos.core', name: 'api', version: versions.frameworkapi]
+            [group: 'org.apache.fineract.cn', name: 'api', version: versions.frameworkapi]
     )
 
     testCompile(
-            [group: 'io.mifos.core', name: 'test', version: versions.frameworktest],
+            [group: 'org.apache.fineract.cn', name: 'test', version: versions.frameworktest],
     )
 }
 

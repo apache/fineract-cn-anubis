@@ -1,4 +1,4 @@
-group 'io.mifos.anubis'
+group 'org.apache.fineract.cn.anubis'
 version '0.1.0-BUILD-SNAPSHOT'
 
 apply plugin: 'java'
@@ -27,7 +27,7 @@ repositories {
 }
 
 configurations {
-    compile.exclude group: 'io.mifos.core', module: 'mariadb'
+    compile.exclude group: 'org.apache.fineract.cn', module: 'mariadb'
     compile.exclude group: 'ch.vorburger', module: 'mariaDB4j'
 }
 
@@ -51,7 +51,7 @@ dependencies {
 
     testCompile(
             [group: 'org.springframework.boot', name: 'spring-boot-starter-test'],
-            [group: 'io.mifos.core', name: 'test', version: versions.frameworktest],
+            [group: 'org.apache.fineract.cn', name: 'test', version: versions.frameworktest],
     )
 }
 
