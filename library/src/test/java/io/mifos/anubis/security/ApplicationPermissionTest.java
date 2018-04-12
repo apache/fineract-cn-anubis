@@ -19,8 +19,8 @@
 package io.mifos.anubis.security;
 
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
-import io.mifos.core.api.util.ApiConstants;
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.api.util.ApiConstants;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

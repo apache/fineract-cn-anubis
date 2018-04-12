@@ -23,7 +23,7 @@ import io.mifos.anubis.annotation.Permittable;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.config.TenantSignatureRepository;
-import io.mifos.core.lang.ServiceException;
+import org.apache.fineract.cn.lang.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

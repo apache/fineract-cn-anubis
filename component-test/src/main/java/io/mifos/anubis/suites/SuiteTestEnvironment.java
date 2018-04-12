@@ -18,9 +18,9 @@
  */
 package io.mifos.anubis.suites;
 
-import io.mifos.core.test.env.TestEnvironment;
-import io.mifos.core.test.fixture.TenantDataStoreContextTestRule;
-import io.mifos.core.test.fixture.cassandra.CassandraInitializer;
+import org.apache.fineract.cn.test.env.TestEnvironment;
+import org.apache.fineract.cn.test.fixture.TenantDataStoreContextTestRule;
+import org.apache.fineract.cn.test.fixture.cassandra.CassandraInitializer;
 import org.junit.ClassRule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.RunExternalResourceOnce;

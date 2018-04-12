@@ -21,9 +21,9 @@ package io.mifos.anubis;
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.core.api.context.AutoSeshat;
-import io.mifos.core.api.util.NotFoundException;
-import io.mifos.core.lang.security.RsaKeyPairFactory;
+import org.apache.fineract.cn.api.context.AutoSeshat;
+import org.apache.fineract.cn.api.util.NotFoundException;
+import org.apache.fineract.cn.lang.security.RsaKeyPairFactory;
 import org.junit.Assert;
 import org.junit.Test;
 

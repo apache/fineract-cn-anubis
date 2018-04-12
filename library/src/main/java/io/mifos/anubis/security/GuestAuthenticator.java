@@ -21,7 +21,7 @@ package io.mifos.anubis.security;
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.api.v1.RoleConstants;
 import io.mifos.anubis.service.PermittableService;
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

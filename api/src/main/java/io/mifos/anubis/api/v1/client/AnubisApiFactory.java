@@ -21,9 +21,9 @@ package io.mifos.anubis.api.v1.client;
 import feign.Feign;
 import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
-import io.mifos.core.api.util.AnnotatedErrorDecoder;
-import io.mifos.core.api.util.TenantedTargetInterceptor;
-import io.mifos.core.api.util.TokenedTargetInterceptor;
+import org.apache.fineract.cn.api.util.AnnotatedErrorDecoder;
+import org.apache.fineract.cn.api.util.TenantedTargetInterceptor;
+import org.apache.fineract.cn.api.util.TokenedTargetInterceptor;
 import org.slf4j.Logger;
 import org.springframework.cloud.netflix.feign.support.SpringMvcContract;
 

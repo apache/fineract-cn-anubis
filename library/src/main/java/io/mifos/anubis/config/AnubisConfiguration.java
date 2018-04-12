@@ -20,8 +20,8 @@ package io.mifos.anubis.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.mifos.core.cassandra.config.EnableCassandra;
-import io.mifos.core.lang.config.EnableApplicationName;
+import org.apache.fineract.cn.cassandra.config.EnableCassandra;
+import org.apache.fineract.cn.lang.config.EnableApplicationName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

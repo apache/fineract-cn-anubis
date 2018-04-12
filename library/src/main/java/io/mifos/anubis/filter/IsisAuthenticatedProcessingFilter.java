@@ -18,6 +18,9 @@
  */
 package io.mifos.anubis.filter;
 
+import static org.apache.fineract.cn.api.util.ApiConstants.AUTHORIZATION_HEADER;
+import static org.apache.fineract.cn.api.util.ApiConstants.USER_HEADER;
+
 import io.mifos.anubis.api.v1.RoleConstants;
 import io.mifos.anubis.api.v1.TokenConstants;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,8 +30,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.util.Optional;
 
-import static io.mifos.core.api.util.ApiConstants.AUTHORIZATION_HEADER;
-import static io.mifos.core.api.util.ApiConstants.USER_HEADER;
 
 /**
  * @author Myrle Krantz

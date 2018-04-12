@@ -18,7 +18,7 @@
  */
 package io.mifos.anubis.security;
 
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;

@@ -25,7 +25,7 @@ import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.PermittableEndpoint;
 import io.mifos.anubis.config.AnubisProperties;
 import io.mifos.anubis.security.ApplicationPermission;
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

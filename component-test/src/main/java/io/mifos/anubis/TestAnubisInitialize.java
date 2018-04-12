@@ -23,12 +23,12 @@ import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.test.v1.TenantApplicationSecurityEnvironmentTestRule;
-import io.mifos.core.api.context.AutoSeshat;
-import io.mifos.core.api.context.AutoUserContext;
-import io.mifos.core.api.util.InvalidTokenException;
-import io.mifos.core.api.util.NotFoundException;
-import io.mifos.core.lang.AutoTenantContext;
-import io.mifos.core.test.fixture.TenantDataStoreTestContext;
+import org.apache.fineract.cn.api.context.AutoSeshat;
+import org.apache.fineract.cn.api.context.AutoUserContext;
+import org.apache.fineract.cn.api.util.InvalidTokenException;
+import org.apache.fineract.cn.api.util.NotFoundException;
+import org.apache.fineract.cn.lang.AutoTenantContext;
+import org.apache.fineract.cn.test.fixture.TenantDataStoreTestContext;
 import org.junit.Assert;
 import org.junit.Test;
 

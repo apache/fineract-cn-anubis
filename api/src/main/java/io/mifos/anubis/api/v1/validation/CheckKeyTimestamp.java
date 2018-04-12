@@ -18,11 +18,11 @@
  */
 package io.mifos.anubis.api.v1.validation;
 
-import io.mifos.core.lang.DateConverter;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.time.DateTimeException;
+import org.apache.fineract.cn.lang.DateConverter;
 
 /**
  * @author Myrle Krantz

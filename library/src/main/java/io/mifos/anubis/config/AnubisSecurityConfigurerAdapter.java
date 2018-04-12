@@ -23,7 +23,7 @@ import io.mifos.anubis.filter.UserContextFilter;
 import io.mifos.anubis.security.ApplicationPermission;
 import io.mifos.anubis.security.IsisAuthenticatedAuthenticationProvider;
 import io.mifos.anubis.security.UrlPermissionChecker;
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

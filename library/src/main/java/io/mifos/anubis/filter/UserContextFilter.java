@@ -18,7 +18,7 @@
  */
 package io.mifos.anubis.filter;
 
-import io.mifos.core.api.util.UserContextHolder;
+import org.apache.fineract.cn.api.util.UserContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;

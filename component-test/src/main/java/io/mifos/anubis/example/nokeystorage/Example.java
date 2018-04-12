@@ -18,7 +18,7 @@
  */
 package io.mifos.anubis.example.nokeystorage;
 
-import io.mifos.core.api.util.CustomFeignClientsConfiguration;
+import org.apache.fineract.cn.api.util.CustomFeignClientsConfiguration;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;

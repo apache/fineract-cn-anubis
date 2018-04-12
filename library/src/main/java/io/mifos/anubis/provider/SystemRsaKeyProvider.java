@@ -19,7 +19,7 @@
 package io.mifos.anubis.provider;
 
 import io.mifos.anubis.config.AnubisConstants;
-import io.mifos.core.lang.security.RsaPublicKeyBuilder;
+import org.apache.fineract.cn.lang.security.RsaPublicKeyBuilder;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -19,7 +19,7 @@
 package io.mifos.anubis.example.noinitialize;
 
 import io.mifos.anubis.config.EnableAnubis;
-import io.mifos.core.lang.config.EnableTenantContext;
+import org.apache.fineract.cn.lang.config.EnableTenantContext;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

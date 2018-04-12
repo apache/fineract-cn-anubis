@@ -18,7 +18,7 @@
  */
 package io.mifos.anubis.example.simple;
 
-import io.mifos.core.api.util.CustomFeignClientsConfiguration;
+import org.apache.fineract.cn.api.util.CustomFeignClientsConfiguration;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

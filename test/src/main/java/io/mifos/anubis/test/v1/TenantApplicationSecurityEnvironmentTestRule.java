@@ -18,16 +18,18 @@
  */
 package io.mifos.anubis.test.v1;
 
+import static org.apache.fineract.cn.test.env.TestEnvironment.SPRING_APPLICATION_NAME_PROPERTY;
+
 import io.mifos.anubis.api.v1.client.Anubis;
 import io.mifos.anubis.api.v1.client.AnubisApiFactory;
 import io.mifos.anubis.api.v1.domain.AllowedOperation;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.core.api.context.AutoSeshat;
-import io.mifos.core.api.context.AutoUserContext;
-import io.mifos.core.lang.AutoTenantContext;
-import io.mifos.core.lang.TenantContextHolder;
-import io.mifos.core.test.env.TestEnvironment;
+import org.apache.fineract.cn.api.context.AutoSeshat;
+import org.apache.fineract.cn.api.context.AutoUserContext;
+import org.apache.fineract.cn.lang.AutoTenantContext;
+import org.apache.fineract.cn.lang.TenantContextHolder;
+import org.apache.fineract.cn.test.env.TestEnvironment;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Collections;
 import java.util.function.BooleanSupplier;
-
-import static io.mifos.core.test.env.TestEnvironment.SPRING_APPLICATION_NAME_PROPERTY;
 
 
 /**

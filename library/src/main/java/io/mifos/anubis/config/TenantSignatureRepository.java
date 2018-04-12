@@ -21,11 +21,11 @@ package io.mifos.anubis.config;
 
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
-import io.mifos.core.lang.security.RsaKeyPairFactory;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.util.List;
 import java.util.Optional;
+import org.apache.fineract.cn.lang.security.RsaKeyPairFactory;
 
 public interface TenantSignatureRepository {
   /**

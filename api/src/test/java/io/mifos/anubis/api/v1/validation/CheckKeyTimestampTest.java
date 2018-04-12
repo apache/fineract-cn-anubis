@@ -18,7 +18,7 @@
  */
 package io.mifos.anubis.api.v1.validation;
 
-import io.mifos.core.lang.DateConverter;
+import org.apache.fineract.cn.lang.DateConverter;
 import org.junit.Assert;
 import org.junit.Test;
 

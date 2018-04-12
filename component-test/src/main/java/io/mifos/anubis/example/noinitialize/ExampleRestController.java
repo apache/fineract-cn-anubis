@@ -20,7 +20,7 @@ package io.mifos.anubis.example.noinitialize;
 
 import io.mifos.anubis.annotation.AcceptedTokenType;
 import io.mifos.anubis.annotation.Permittable;
-import io.mifos.core.api.util.UserContextHolder;
+import org.apache.fineract.cn.api.util.UserContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

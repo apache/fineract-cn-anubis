@@ -28,7 +28,7 @@ import io.mifos.anubis.provider.InvalidKeyTimestampException;
 import io.mifos.anubis.provider.TenantRsaKeyProvider;
 import io.mifos.anubis.service.PermittableService;
 import io.mifos.anubis.token.TokenType;
-import io.mifos.core.lang.ApplicationName;
+import org.apache.fineract.cn.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

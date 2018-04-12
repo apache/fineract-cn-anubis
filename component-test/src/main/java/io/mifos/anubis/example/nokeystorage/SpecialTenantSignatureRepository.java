@@ -21,7 +21,7 @@ package io.mifos.anubis.example.nokeystorage;
 import io.mifos.anubis.api.v1.domain.ApplicationSignatureSet;
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.config.TenantSignatureRepository;
-import io.mifos.core.lang.security.RsaKeyPairFactory;
+import org.apache.fineract.cn.lang.security.RsaKeyPairFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

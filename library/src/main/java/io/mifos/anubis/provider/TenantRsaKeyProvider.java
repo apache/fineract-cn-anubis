@@ -20,7 +20,7 @@ package io.mifos.anubis.provider;
 
 import io.mifos.anubis.api.v1.domain.Signature;
 import io.mifos.anubis.config.TenantSignatureRepository;
-import io.mifos.core.lang.security.RsaPublicKeyBuilder;
+import org.apache.fineract.cn.lang.security.RsaPublicKeyBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
