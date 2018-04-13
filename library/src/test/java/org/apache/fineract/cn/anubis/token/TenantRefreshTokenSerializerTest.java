@@ -42,7 +42,7 @@ import java.time.ZoneOffset;
  */
 public class TenantRefreshTokenSerializerTest {
 
-  private static final String APPLICATION_NAME = "mifosio-core";
+  private static final String APPLICATION_NAME = "fineract-cn-core";
   private static final int SECONDS_TO_LIVE = 15;
   private static final String USER = "who";
   private static final String ENDPOINT_SET = "what";

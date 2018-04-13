@@ -26,10 +26,10 @@ public interface TokenConstants {
   String NO_AUTHENTICATION = "N/A";
   String PREFIX = "Bearer ";
 
-  String JWT_SIGNATURE_TIMESTAMP_CLAIM = "/mifos.io/signatureTimestamp";
-  String JWT_ENDPOINT_SET_CLAIM = "/mifos.io/endpointSet";
-  String JWT_CONTENT_CLAIM = "/mifos.io/tokenContent";
-  String JWT_SOURCE_APPLICATION_CLAIM = "/mifos.io/sourceApplication";
+  String JWT_SIGNATURE_TIMESTAMP_CLAIM = "/fincn.apache.org/s";
+  String JWT_ENDPOINT_SET_CLAIM = "/fincn.apache.org/e";
+  String JWT_CONTENT_CLAIM = "/fincn.apache.org/c";
+  String JWT_SOURCE_APPLICATION_CLAIM = "/fincn.apache.org/a";
 
-  String REFRESH_TOKEN_COOKIE_NAME = "org.apache.fineract.refreshToken";
+  String REFRESH_TOKEN_COOKIE_NAME = "org.apache.fincn.refreshToken";
 }

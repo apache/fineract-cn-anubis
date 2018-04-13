@@ -43,7 +43,7 @@ public class SystemAccessTokenSerializerTest {
     super();
   }
 
-  private static final String APPLICATION_NAME = "mifosio-core";
+  private static final String APPLICATION_NAME = "fineract-cn-core";
   private static final String TEST_TENANT = "token_test";
   private static final String ROLE = "y";
   private static final int SECONDS_TO_LIVE = 15;
