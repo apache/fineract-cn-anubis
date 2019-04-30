@@ -1,4 +1,4 @@
-# Apache Fineract CN Authorization Library
+# Apache Fineract CN Authorization Library [![Build Status](https://api.travis-ci.com/apache/fineract-cn-anubis.svg?branch=develop)](https://travis-ci.com/apache/fineract-cn-anubis)
 
 This project provides authorization for Apache Fineract CN services.
 
