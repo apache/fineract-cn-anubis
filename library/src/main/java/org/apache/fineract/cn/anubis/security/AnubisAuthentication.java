@@ -87,4 +87,16 @@ class AnubisAuthentication implements Authentication {
   public String getName() {
     return userIdentifier;
   }
+
+  @Override
+  public String toString() {
+    return "AnubisAuthentication{" +
+         "authenticated=" + authenticated +
+         ", token='" + token + '\'' +
+         ", userIdentifier='" + userIdentifier + '\'' +
+         ", forApplicationName='" + forApplicationName + '\'' +
+         ", sourceApplicationName='" + sourceApplicationName + '\'' +
+         ", applicationPermissions=" + applicationPermissions +
+         '}';
+  }
 }
