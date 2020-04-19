@@ -22,7 +22,7 @@ import org.apache.fineract.cn.anubis.api.v1.domain.ApplicationSignatureSet;
 import org.apache.fineract.cn.anubis.api.v1.domain.PermittableEndpoint;
 import org.apache.fineract.cn.anubis.api.v1.domain.Signature;
 import org.apache.fineract.cn.anubis.api.v1.validation.ValidKeyTimestamp;
-import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
