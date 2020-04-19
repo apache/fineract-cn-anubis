@@ -45,7 +45,8 @@ dependencyManagement {
 dependencies {
     compile(
             [group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign'],
-                [group: 'org.springframework.cloud', name: 'spring-cloud-starter-netflix-eureka-client'],
+            [group: 'org.springframework.cloud', name: 'spring-cloud-starter-netflix-eureka-client'],
+            [group: 'org.apache.httpcomponents', name: 'httpclient'],
             [group: 'org.springframework.cloud', name: 'spring-cloud-starter-security'],
             [group: 'org.hibernate', name: 'hibernate-validator', version: versions.hibernatevalidator],
             [group: 'io.jsonwebtoken', name: 'jjwt', version: versions.jjwt],
