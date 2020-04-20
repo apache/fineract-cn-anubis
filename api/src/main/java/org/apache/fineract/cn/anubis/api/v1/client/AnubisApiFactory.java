@@ -25,7 +25,8 @@ import org.apache.fineract.cn.api.util.AnnotatedErrorDecoder;
 import org.apache.fineract.cn.api.util.TenantedTargetInterceptor;
 import org.apache.fineract.cn.api.util.TokenedTargetInterceptor;
 import org.slf4j.Logger;
-import org.springframework.cloud.netflix.feign.support.SpringMvcContract;
+import org.springframework.cloud.openfeign.support.SpringMvcContract;
+
 
 @SuppressWarnings("unused")
 public interface AnubisApiFactory {
