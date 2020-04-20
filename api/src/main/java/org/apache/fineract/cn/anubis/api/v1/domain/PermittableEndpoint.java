@@ -19,10 +19,10 @@
 package org.apache.fineract.cn.anubis.api.v1.domain;
 
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.ScriptAssert;
 
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -36,7 +36,7 @@ public class PermittableEndpoint {
   @Length(min = 3)
   private String method;
 
-  @Nullable
+  @NotBlank
   private String groupId;
 
   private boolean acceptTokenIntendedForForeignApplication;
