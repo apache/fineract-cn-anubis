@@ -42,7 +42,7 @@ import org.apache.fineract.cn.lang.ApplicationName;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.actuate.endpoint.mvc.EndpointHandlerMapping;
+import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandlerMapping;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -56,13 +56,13 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Component
 public class PermittableService {
   private final RequestMappingHandlerMapping requestMappingHandlerMapping;
-  private final EndpointHandlerMapping endpointHandlerMapping;
+  private final WebMvcEndpointHandlerMapping endpointHandlerMapping;
   private final ApplicationName applicationName;
   private final Permittable defaultPermittable;
 
   @Autowired
   public PermittableService(final RequestMappingHandlerMapping requestMappingHandlerMapping,
-                            final EndpointHandlerMapping endpointHandlerMapping,
+                            final WebMvcEndpointHandlerMapping endpointHandlerMapping,
                             final ApplicationName applicationName,
                             final AnubisProperties anubisProperties,
                             final @Qualifier(LOGGER_NAME) Logger logger) {
