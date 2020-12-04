@@ -34,7 +34,6 @@ plugins {
     id 'maven-publish'
     id 'java'
     id "com.github.ben-manes.versions" version "0.28.0"
-
 }
 
 
