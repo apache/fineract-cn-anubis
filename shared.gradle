@@ -30,7 +30,7 @@ ext.versions = [
         frameworkcassandra  : 'spring_boot_2-SNAPSHOT',
         frameworklang       : 'spring_boot_2-SNAPSHOT',
         jjwt                : '0.9.1',
-        hibernatevalidator  : '6.1.3.Final'
+        hibernatevalidator  : '6.1.6.Final'
 ]
 
 tasks.withType(JavaCompile) {
