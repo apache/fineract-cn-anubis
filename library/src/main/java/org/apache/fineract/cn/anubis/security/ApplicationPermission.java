@@ -43,6 +43,8 @@ public class ApplicationPermission implements GrantedAuthority {
   private final List<PermissionSegmentMatcher> servletPathSegmentMatchers;
 
   private final AllowedOperation allowedOperation;
+  private final String accountOperation;
+
 
   private final boolean acceptTokenIntendedForForeignApplication;
 
@@ -51,6 +53,17 @@ public class ApplicationPermission implements GrantedAuthority {
       final AllowedOperation allowedOperation,
       final boolean acceptTokenIntendedForForeignApplication) {
     this.allowedOperation = allowedOperation;
+    this.accountOperation = null;
+    servletPathSegmentMatchers = PermissionSegmentMatcher.getServletPathSegmentMatchers(servletPath);
+    this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
+  }
+
+  public ApplicationPermission(
+          final String servletPath,
+          final String accountOperation,
+          final boolean acceptTokenIntendedForForeignApplication) {
+    this.allowedOperation = AllowedOperation.READ;
+    this.accountOperation = accountOperation;
     servletPathSegmentMatchers = PermissionSegmentMatcher.getServletPathSegmentMatchers(servletPath);
     this.acceptTokenIntendedForForeignApplication = acceptTokenIntendedForForeignApplication;
   }
@@ -62,6 +75,10 @@ public class ApplicationPermission implements GrantedAuthority {
 
   @Override public String getAuthority() {
     return URL_AUTHORITY;
+  }
+
+  public String getAccountOperation() {
+    return accountOperation;
   }
 
   boolean matches(final FilterInvocation filterInvocation,
@@ -80,6 +97,18 @@ public class ApplicationPermission implements GrantedAuthority {
         request.getServletPath(),
         request.getMethod(),
         (matcher, segment) -> matcher.matches(segment, principal, acceptTokenIntendedForForeignApplication, isSu));
+  }
+
+  boolean matches(final String path, String method,
+                  final String applicationName,
+                  final AnubisPrincipal principal) {
+    if (!acceptTokenIntendedForForeignApplication && !applicationName.equals(principal.getForApplicationName()))
+      return false;
+    boolean isSu = principal.getUser().equals(ApiConstants.SYSTEM_SU);
+    return matchesHelper(
+            path,
+            method,
+            (matcher, segment) -> matcher.matches(segment, principal, acceptTokenIntendedForForeignApplication, isSu));
   }
 
   private boolean matchesHelper(final String servletPath, final String method,

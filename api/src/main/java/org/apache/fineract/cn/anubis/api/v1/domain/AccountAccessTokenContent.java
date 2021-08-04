@@ -16,24 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.cn.anubis.config;
+package org.apache.fineract.cn.anubis.api.v1.domain;
 
-import org.springframework.context.annotation.Import;
+import java.util.List;
 
-import java.lang.annotation.*;
+/**
+ * @author manoj
+ */
+public class AccountAccessTokenContent {
+    private List<AccountAccess> accounts;
 
-@SuppressWarnings({"unused", "WeakerAccess"})
-@Target({ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Import({
-    AnubisConfiguration.class,
-    AnubisImportSelector.class,
-    AnubisSecurityConfigurerAdapter.class,
-    FinKeycloakSecurityConfigurerAdapter.class
-})
-public @interface EnableAnubis {
-  boolean provideSignatureRestController() default true;
-  boolean provideSignatureStorage() default true;
-  boolean generateEmptyInitializeEndpoint() default false;
+    public AccountAccessTokenContent() {
+    }
+
+    public AccountAccessTokenContent(List<AccountAccess> accounts) {
+        this.accounts = accounts;
+    }
+
+    public List<AccountAccess> getAccounts() {
+        return accounts;
+    }
+
+    public void setAccounts(List<AccountAccess> accounts) {
+        this.accounts = accounts;
+    }
 }
