@@ -28,6 +28,7 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,6 +56,7 @@ import java.util.List;
 @SuppressWarnings("WeakerAccess")
 @Configuration
 @EnableWebSecurity
+@ConditionalOnProperty("authentication.service.anubis")
 public class AnubisSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
   final private Logger logger;
   final private ApplicationName applicationName;
