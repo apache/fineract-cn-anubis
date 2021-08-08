@@ -16,14 +16,10 @@
  */
 
 buildscript {
-
     repositories {
         jcenter()
     }
 
-    dependencies {
-        classpath 'io.spring.gradle:dependency-management-plugin:1.0.10.RELEASE'
-    }
 }
 
 plugins {
@@ -47,8 +43,10 @@ dependencies {
             [group: 'org.springframework.cloud', name: 'spring-cloud-starter-openfeign'],
             [group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'],
             [group: 'org.hibernate.validator', name: 'hibernate-validator', version: versions.hibernatevalidator],
-            [group: 'com.google.code.gson', name: 'gson'],
-            [group: 'org.apache.fineract.cn', name: 'api', version: versions.frameworkapi]
+            //[group: 'com.google.code.gson', name: 'gson'],
+            [group: 'io.github.openfeign', name: 'feign-gson', version: '10.12'],
+            [group: 'org.apache.fineract.cn', name: 'api', version: versions.frameworkapi],
+            [group: 'org.apache.fineract.cn', name: 'lang', version: versions.frameworkapi]
     )
 
     testCompile(

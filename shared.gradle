@@ -34,14 +34,14 @@ ext.versions = [
 ]
 
 tasks.withType(JavaCompile) {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
     jcenter()
     mavenLocal()
-    maven { url 'https://mifos.jfrog.io/mifos/libs-snapshot/' }
+    maven { url System.getenv("ARTIFACTORY_URL") }
 }
 
 dependencyManagement {
@@ -82,10 +82,10 @@ jar {
 }
 
 artifactory {
-    contextUrl = System.getenv("ARTIFACTORY_URL")
+    contextUrl = System.getenv("ARTIFACTORY_URL_PUBLISH")
     publish {
         repository {
-            repoKey = project.findProperty('artifactoryRepoKey')
+            repoKey = System.getenv("ARTIFACTORY_REPOKEY")
             username = System.getenv("ARTIFACTORY_USER")
             password = System.getenv("ARTIFACTORY_PASSWORD")
         }
