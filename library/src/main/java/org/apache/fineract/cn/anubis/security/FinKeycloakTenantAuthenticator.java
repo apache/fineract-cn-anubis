@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -93,7 +94,8 @@ public class FinKeycloakTenantAuthenticator {
 
 
    if(jwt.getBody().get("fin") != null){
-    final String serializedAccountAccess =  jwt.getBody().get("fin", String.class);
+    Map map=  jwt.getBody().get("fin", Map.class);
+    final String serializedAccountAccess =  gson.toJson(map);
     final AccountAccessTokenContent accountAccess = gson.fromJson(serializedAccountAccess, AccountAccessTokenContent.class);
     final Set<ApplicationPermission> acctPermissions = translateAccountPermissions(accountAccess.getAccounts());
     permissions.addAll(acctPermissions);
