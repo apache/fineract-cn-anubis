@@ -20,6 +20,7 @@ package org.apache.fineract.cn.anubis.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.fineract.cn.anubis.filter.IsisAuthenticatedProcessingFilter;
+import org.apache.fineract.cn.anubis.filter.UserContextFilter;
 import org.apache.fineract.cn.anubis.security.FinKeycloakAuthenticationProvider;
 import org.apache.fineract.cn.anubis.security.UrlPermissionChecker;
 import org.apache.fineract.cn.lang.ApplicationName;
@@ -54,9 +55,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.Filter;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,90 +74,114 @@ import java.util.Set;
 @ComponentScan(basePackageClasses = KeycloakSecurityComponents.class)
 @ConditionalOnProperty({"authentication.service.keycloak"})
 public class FinKeycloakSecurityConfigurerAdapter extends KeycloakWebSecurityConfigurerAdapter {
- final private Logger logger;
- final private ApplicationName applicationName;
+    final private Logger logger;
+    final private ApplicationName applicationName;
 
- public FinKeycloakSecurityConfigurerAdapter(final @Qualifier(AnubisConstants.LOGGER_NAME) Logger logger,
-                                             final ApplicationName applicationName) {
-  this.logger = logger;
-  this.applicationName = applicationName;
- }
-
- static class CustomKeycloakAccessToken extends AccessToken {
-  @JsonProperty("roles")
-  protected Set<String> roles;
-
-  public Set<String> getRoles() {
-   return roles;
-  }
-
-  public void setRoles(Set<String> roles) {
-   this.roles = roles;
-  }
- }
-
- @Override
- protected KeycloakAuthenticationProvider keycloakAuthenticationProvider() {
-  return new KeycloakAuthenticationProvider() {
-
-   @Override
-   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    KeycloakAuthenticationToken token = (KeycloakAuthenticationToken) authentication;
-    List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
-
-    for (String role : ((CustomKeycloakAccessToken)((KeycloakPrincipal<KeycloakSecurityContext>)token.getPrincipal()).getKeycloakSecurityContext().getToken()).getRoles()) {
-     grantedAuthorities.add(new KeycloakRole(role));
+    public FinKeycloakSecurityConfigurerAdapter(final @Qualifier(AnubisConstants.LOGGER_NAME) Logger logger,
+                                                final ApplicationName applicationName) {
+        this.logger = logger;
+        this.applicationName = applicationName;
     }
 
-    return new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), new SimpleAuthorityMapper().mapAuthorities(grantedAuthorities));
-   }
+    @Override
+    protected KeycloakAuthenticationProvider keycloakAuthenticationProvider() {
+        return new KeycloakAuthenticationProvider() {
 
-  };
- }
+            @Override
+            public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+                KeycloakAuthenticationToken token = (KeycloakAuthenticationToken) authentication;
+                List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
 
- @Autowired
- public void configureGlobal(
-         final AuthenticationManagerBuilder auth,
-         @SuppressWarnings("SpringJavaAutowiringInspection") final FinKeycloakAuthenticationProvider provider)
-         throws Exception {
-  auth.authenticationProvider(provider);
- }
+                for (String role : ((CustomKeycloakAccessToken) ((KeycloakPrincipal<KeycloakSecurityContext>) token.getPrincipal()).getKeycloakSecurityContext().getToken()).getRoles()) {
+                    grantedAuthorities.add(new KeycloakRole(role));
+                }
 
- @Bean
- @Override
- protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-  return new NullAuthenticatedSessionStrategy();
- }
- @Bean
- public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
-  return new KeycloakSpringBootConfigResolver();
- }
+                return new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), new SimpleAuthorityMapper().mapAuthorities(grantedAuthorities));
+            }
 
- @Bean
- public FilterRegistrationBean keycloakAuthenticationProcessingFilterRegistrationBean(
-         KeycloakAuthenticationProcessingFilter filter) {
-  FilterRegistrationBean registrationBean = new FilterRegistrationBean(filter);
-  registrationBean.setEnabled(false);
-  return registrationBean;
- }
+        };
+    }
 
- @Bean
- public FilterRegistrationBean keycloakPreAuthActionsFilterRegistrationBean(KeycloakPreAuthActionsFilter filter) {
-  FilterRegistrationBean registrationBean = new FilterRegistrationBean(filter);
-  registrationBean.setEnabled(false);
-  return registrationBean;
- }
+    @PostConstruct
+    public void configureSecurityContext() {
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    }
 
- private AccessDecisionManager defaultAccessDecisionManager() {
-  final List<AccessDecisionVoter<?>> voters = new ArrayList<>();
-  voters.add(new UrlPermissionChecker(logger, applicationName));return new UnanimousBased(voters);
- }
+    @Bean
+    public FilterRegistrationBean securityFilterChain(@Qualifier(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME) final Filter securityFilter) {
+        final FilterRegistrationBean registration = new FilterRegistrationBean(securityFilter);
+        registration.setOrder(Integer.MIN_VALUE + 1); //Just after the tenant filter.
+        registration.setName(AbstractSecurityWebApplicationInitializer.DEFAULT_FILTER_NAME);
+        return registration;
+    }
 
- protected void configure(HttpSecurity http) throws Exception {
-  Filter filter = new IsisAuthenticatedProcessingFilter(super.authenticationManager());
-  ((HttpSecurity)((HttpSecurity)((HttpSecurity)((HttpSecurity)((UrlAuthorizationConfigurer.StandardInterceptUrlRegistry)((UrlAuthorizationConfigurer.AuthorizedUrl)((UrlAuthorizationConfigurer)((HttpSecurity)((HttpSecurity)http.httpBasic().disable()).csrf().disable()).apply(new UrlAuthorizationConfigurer(this.getApplicationContext()))).getRegistry().anyRequest()).hasAuthority("maats_feather").accessDecisionManager(this.defaultAccessDecisionManager())).and()).formLogin().disable()).logout().disable()).addFilter(filter).sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()).exceptionHandling().accessDeniedHandler((request, response, accessDeniedException) -> {
-   response.setStatus(404);
-  });
- }
+    @Bean
+    public FilterRegistrationBean userContextFilter() {
+        final FilterRegistrationBean registration = new FilterRegistrationBean(new UserContextFilter());
+        registration.setOrder(Integer.MIN_VALUE + 2);
+        registration.addUrlPatterns("*");
 
+        return registration;
+    }
+
+
+    @Autowired
+    public void configureGlobal(
+            final AuthenticationManagerBuilder auth,
+            @SuppressWarnings("SpringJavaAutowiringInspection") final FinKeycloakAuthenticationProvider provider)
+            throws Exception {
+        auth.authenticationProvider(provider);
+    }
+
+    @Bean
+    @Override
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new NullAuthenticatedSessionStrategy();
+    }
+
+    @Bean
+    public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
+        return new KeycloakSpringBootConfigResolver();
+    }
+
+    @Bean
+    public FilterRegistrationBean keycloakAuthenticationProcessingFilterRegistrationBean(
+            KeycloakAuthenticationProcessingFilter filter) {
+        FilterRegistrationBean registrationBean = new FilterRegistrationBean(filter);
+        registrationBean.setEnabled(false);
+        return registrationBean;
+    }
+
+    @Bean
+    public FilterRegistrationBean keycloakPreAuthActionsFilterRegistrationBean(KeycloakPreAuthActionsFilter filter) {
+        FilterRegistrationBean registrationBean = new FilterRegistrationBean(filter);
+        registrationBean.setEnabled(false);
+        return registrationBean;
+    }
+
+    private AccessDecisionManager defaultAccessDecisionManager() {
+        final List<AccessDecisionVoter<?>> voters = new ArrayList<>();
+        voters.add(new UrlPermissionChecker(logger, applicationName));
+        return new UnanimousBased(voters);
+    }
+
+    protected void configure(HttpSecurity http) throws Exception {
+        Filter filter = new IsisAuthenticatedProcessingFilter(super.authenticationManager());
+        ((HttpSecurity) ((HttpSecurity) ((HttpSecurity) ((HttpSecurity) ((UrlAuthorizationConfigurer.StandardInterceptUrlRegistry) ((UrlAuthorizationConfigurer.AuthorizedUrl) ((UrlAuthorizationConfigurer) ((HttpSecurity) ((HttpSecurity) http.httpBasic().disable()).csrf().disable()).apply(new UrlAuthorizationConfigurer(this.getApplicationContext()))).getRegistry().anyRequest()).hasAuthority("maats_feather").accessDecisionManager(this.defaultAccessDecisionManager())).and()).formLogin().disable()).logout().disable()).addFilter(filter).sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()).exceptionHandling().accessDeniedHandler((request, response, accessDeniedException) -> {
+            response.setStatus(404);
+        });
+    }
+
+    static class CustomKeycloakAccessToken extends AccessToken {
+        @JsonProperty("roles")
+        protected Set<String> roles;
+
+        public Set<String> getRoles() {
+            return roles;
+        }
+
+        public void setRoles(Set<String> roles) {
+            this.roles = roles;
+        }
+    }
 }

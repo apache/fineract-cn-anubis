@@ -49,7 +49,7 @@ public class AccountLevelAccessVerifierCustom {
                 .collect(Collectors.toSet());
 
         if(accountOperation.size() == 0  || !(accountOperation.contains(OWNER) || accountOperation.contains(operation))) {
-            throw AmitAuthenticationException.internalError("Access Denied, " + operation + " on " + accountNo);
+            throw AccountLevelAccessDeniedException.internalError("Access Denied, " + operation + " on " + accountNo);
         }
     }
 }
