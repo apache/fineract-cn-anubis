@@ -16,7 +16,7 @@
  */
 
 group 'org.apache.fineract.cn.anubis'
-version '0.1.0-BUILD-SNAPSHOT'
+version '0.1.1-BUILD-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -72,14 +72,13 @@ jar {
     from sourceSets.main.java
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
-
 artifactory {
-    contextUrl = System.getenv("ARTIFACTORY_URL")
+    contextUrl = 'https://fynarfin.jfrog.io/artifactory/'
     publish {
         repository {
-            repoKey = project.findProperty('artifactoryRepoKey')
-            username = System.getenv("ARTIFACTORY_USER")
-            password = System.getenv("ARTIFACTORY_PASSWORD")
+            repoKey = 'fyn-libs-snapshot'
+            username = 'avik@fynarfin.io'
+            password = 'Langlock010!'
         }
 
         defaults {

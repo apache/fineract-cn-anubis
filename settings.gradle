@@ -21,3 +21,7 @@ includeBuild 'api'
 includeBuild 'library'
 includeBuild 'test'
 includeBuild 'component-test'
+gradle.ext{
+    app_username = 'avik@fynarfin.io'
+    app_password = 'Langlock010!'
+}
