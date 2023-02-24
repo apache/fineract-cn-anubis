@@ -28,6 +28,8 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+//import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -60,6 +62,8 @@ import java.util.List;
 public class AnubisSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
   final private Logger logger;
   final private ApplicationName applicationName;
+  @Value("${authentication.enabled}")
+  private boolean authentication;
 
   public AnubisSecurityConfigurerAdapter(final @Qualifier(AnubisConstants.LOGGER_NAME) Logger logger,
                                          final ApplicationName applicationName) {
@@ -106,19 +110,26 @@ public class AnubisSecurityConfigurerAdapter extends WebSecurityConfigurerAdapte
 
   @Override
   protected void configure(final HttpSecurity http) throws Exception {
-    final Filter filter = new IsisAuthenticatedProcessingFilter(super.authenticationManager());
 
-    http.httpBasic().disable()
-        .csrf().disable()
-        .apply (new UrlAuthorizationConfigurer<>(getApplicationContext()))
-            .getRegistry().anyRequest().hasAuthority(ApplicationPermission.URL_AUTHORITY)
+//     http.httpBasic().disable().csrf().disable().authorizeRequests().antMatchers("/").permitAll();
+
+
+    if(this.authentication){
+      final Filter filter = new IsisAuthenticatedProcessingFilter(super.authenticationManager());
+      http.httpBasic().disable()
+              .csrf().disable()
+              .apply (new UrlAuthorizationConfigurer<>(getApplicationContext()))
+              .getRegistry().anyRequest().hasAuthority(ApplicationPermission.URL_AUTHORITY)
               .accessDecisionManager(defaultAccessDecisionManager()).and()
-        .formLogin().disable()
-        .logout().disable()
-        .addFilter(filter)
-        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-        .exceptionHandling().accessDeniedHandler(
-        (request, response, accessDeniedException) -> response.setStatus(HttpStatus.SC_NOT_FOUND));
+              .formLogin().disable()
+              .logout().disable()
+              .addFilter(filter)
+              .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+              .exceptionHandling().accessDeniedHandler(
+                      (request, response, accessDeniedException) -> response.setStatus(HttpStatus.SC_NOT_FOUND));
+    }else{
+      http.httpBasic().disable().csrf().disable().authorizeRequests().antMatchers("/").permitAll();
+    }
   }
 
   @Autowired
